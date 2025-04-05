@@ -25,6 +25,7 @@ app.use(cors({
         'http://localhost:3000',
         'http://127.0.0.1:5500',
         'https://revifym.vercel.app',
+        'https://revify-ten.vercel.app',
         'https://revify.onrender.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
