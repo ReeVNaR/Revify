@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import SongsList from './pages/SongsList';
@@ -11,6 +11,12 @@ import Search from './pages/Search';
 
 const App = () => {
   const { currentTrack } = useAudio();
+  const [isError, setIsError] = useState(false);
+
+  const handleRetry = () => {
+    setIsError(false);
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-[100dvh] bg-[#121212] flex flex-col">
@@ -18,17 +24,30 @@ const App = () => {
         <main className="flex-1 ml-0 md:ml-64 min-h-full transition-all duration-300">
           <Header />
           <div className="mt-16 h-[calc(100dvh-4rem)] overflow-y-auto pb-[calc(6rem+2rem)] md:pb-[calc(6rem+1rem)]">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/songs" element={<SongsList />} />
-              <Route path="/songs/:songId" element={<SongView />} />
-              <Route path="*" element={
-                <div className="text-white text-center p-8">
-                  <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
-                </div>
-              } />
-            </Routes>
+            {isError ? (
+              <div className="text-white text-center p-8 flex flex-col items-center">
+                <h2 className="text-2xl font-bold mb-4">Connection Error</h2>
+                <p className="mb-4">Unable to connect to the server. Please try again.</p>
+                <button 
+                  onClick={handleRetry}
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full"
+                >
+                  Retry Connection
+                </button>
+              </div>
+            ) : (
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/songs" element={<SongsList />} />
+                <Route path="/songs/:songId" element={<SongView />} />
+                <Route path="*" element={
+                  <div className="text-white text-center p-8">
+                    <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
+                  </div>
+                } />
+              </Routes>
+            )}
           </div>
         </main>
       </div>

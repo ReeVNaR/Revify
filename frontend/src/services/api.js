@@ -1,7 +1,10 @@
 import axios from 'axios';
 import * as mmb from 'music-metadata-browser';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://revify.onrender.com';
+const API_URL = 'https://revify.onrender.com';
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
 const api = axios.create({
     baseURL: API_URL,
@@ -9,32 +12,32 @@ const api = axios.create({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    timeout: 15000,
-    withCredentials: false,
-    validateStatus: status => status >= 200 && status < 500
+    timeout: 30000, // Increased timeout for deployed server
+    withCredentials: false
 });
 
-const retryDelay = (retryNumber = 0) => Math.min(1000 * (2 ** retryNumber), 10000);
-
+// Add request interceptor
 api.interceptors.response.use(
     response => response,
     async error => {
-        const { config, message } = error;
+        const { config } = error;
         
         if (!config || !config.retry) {
-            console.error('API Error:', message);
-            throw error;
+            return Promise.reject(error);
         }
 
         config.retryCount = config.retryCount ?? 0;
 
-        if (config.retryCount >= 3) {
-            console.error('Max retries reached:', message);
-            throw error;
+        if (config.retryCount >= MAX_RETRIES) {
+            // Dispatch a custom event that App.jsx can listen to
+            window.dispatchEvent(new CustomEvent('api-error', { 
+                detail: { message: 'Connection failed after multiple retries' }
+            }));
+            return Promise.reject(error);
         }
 
         config.retryCount += 1;
-        await new Promise(resolve => setTimeout(resolve, retryDelay(config.retryCount)));
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
         
         return api(config);
     }
@@ -46,7 +49,7 @@ const withRetry = config => ({ ...config, retry: true });
 // Add request interceptor for retries
 api.interceptors.request.use(
     config => {
-        console.log(`Making ${config.method.toUpperCase()} request to ${config.url}`);
+        console.log(`Making ${config.method.toUpperCase()} request to ${API_URL}${config.url}`);
         return config;
     },
     error => {
@@ -153,9 +156,8 @@ export const uploadAudio = async (file, onProgress) => {
 
 export const fetchSongs = async () => {
     try {
-        console.log('Attempting to fetch songs from:', `${API_URL}/api/songs`);
-        const response = await api.get('/api/songs');
-        console.log('Songs response:', response);
+        console.log('Fetching songs from deployed server:', `${API_URL}/api/songs`);
+        const response = await api.get('/api/songs', { retry: true });
         
         if (!response.data) {
             throw new Error('No data received from server');
@@ -163,13 +165,7 @@ export const fetchSongs = async () => {
         
         return response.data;
     } catch (error) {
-        console.error('Detailed fetch error:', {
-            message: error.message,
-            code: error.code,
-            status: error.response?.status,
-            data: error.response?.data,
-            config: error.config
-        });
+        console.error('Error fetching songs from deployed server:', error);
         throw new Error(`Failed to fetch songs: ${error.message}`);
     }
 };
