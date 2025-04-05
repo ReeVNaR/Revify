@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Songs - Admin Panel</title>
+    <link rel="icon" type="image/png" href="./favicon.png">
+    <link href="./styles/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Upload Songs</h1>
+        
+        <div id="error" class="error-message hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+        
+        <div id="formsContainer">
+            <div class="song-form mb-8 border-b pb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Song 1</h2>
+                    <button type="button" class="remove-form-btn hidden px-3 py-1 text-red-600 hover:text-red-800">×</button>
+                </div>
+                <form class="form space-y-6" data-form-index="0">
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="title-0">Song Title</label>
+                        <input type="text" id="title-0" class="w-full p-2 border rounded-md" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="artist-0">Artist</label>
+                        <input type="text" id="artist-0" class="w-full p-2 border rounded-md" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="genre-0">Genre</label>
+                        <input type="text" id="genre-0" class="w-full p-2 border rounded-md" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="audioFile-0">Audio File</label>
+                        <input type="file" id="audioFile-0" accept="audio/*" class="w-full p-2 border rounded-md" required>
+                    </div>
+
+                    <div id="audioPreview-0" class="hidden mt-4">
+                        <label class="block text-gray-700 mb-2">Preview</label>
+                        <audio controls class="w-full">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="coverFile-0">Cover Image</label>
+                        <input type="file" id="coverFile-0" accept="image/*" class="w-full p-2 border rounded-md" required>
+                        <div id="imagePreview-0" class="hidden mt-2">
+                            <img class="w-48 h-48 object-cover rounded-md shadow-md">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mt-6">
+            <button type="button" id="addFormBtn" class="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 transition-all duration-300">
+                + Add Another Song
+            </button>
+            <button type="button" id="submitAllBtn" class="w-full py-2 px-4 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300">
+                Upload All Songs
+            </button>
+        </div>
+
+        <div id="progressContainer" class="hidden mt-4">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const formsContainer = document.getElementById('formsContainer');
+        const addFormBtn = document.getElementById('addFormBtn');
+        const submitAllBtn = document.getElementById('submitAllBtn');
+        const errorDiv = document.getElementById('error');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        
+        let formCount = 1;
+
+        function createNewForm() {
+            const formDiv = document.createElement('div');
+            formDiv.className = 'song-form mb-8 border-b pb-6';
+            const formHtml = `
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Song ${formCount + 1}</h2>
+                    <button type="button" class="remove-form-btn px-3 py-1 text-red-600 hover:text-red-800">×</button>
+                </div>
+                <form class="form space-y-6" data-form-index="${formCount}">
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="title-${formCount}">Song Title</label>
+                        <input type="text" id="title-${formCount}" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="artist-${formCount}">Artist</label>
+                        <input type="text" id="artist-${formCount}" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="genre-${formCount}">Genre</label>
+                        <input type="text" id="genre-${formCount}" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="audioFile-${formCount}">Audio File</label>
+                        <input type="file" id="audioFile-${formCount}" accept="audio/*" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div id="audioPreview-${formCount}" class="hidden mt-4">
+                        <label class="block text-gray-700 mb-2">Preview</label>
+                        <audio controls class="w-full">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2" for="coverFile-${formCount}">Cover Image</label>
+                        <input type="file" id="coverFile-${formCount}" accept="image/*" class="w-full p-2 border rounded-md" required>
+                        <div id="imagePreview-${formCount}" class="hidden mt-2">
+                            <img class="w-48 h-48 object-cover rounded-md shadow-md">
+                        </div>
+                    </div>
+                </form>
+            `;
+            formDiv.innerHTML = formHtml;
+            formsContainer.appendChild(formDiv);
+            
+            // Add event listeners for the new form
+            setupFormListeners(formCount);
+            formCount++;
+        }
+
+        function setupFormListeners(index) {
+            // Audio preview
+            document.getElementById(`audioFile-${index}`).addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const audioPreview = document.getElementById(`audioPreview-${index}`);
+                    const audio = audioPreview.querySelector('audio');
+                    audio.src = URL.createObjectURL(file);
+                    audioPreview.classList.remove('hidden');
+                }
+            });
+
+            // Image preview
+            document.getElementById(`coverFile-${index}`).addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const imagePreview = document.getElementById(`imagePreview-${index}`);
+                    const img = imagePreview.querySelector('img');
+                    img.src = URL.createObjectURL(file);
+                    imagePreview.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Setup initial form listeners
+        setupFormListeners(0);
+
+        // Add form button click handler
+        addFormBtn.addEventListener('click', createNewForm);
+
+        // Remove form button click handler
+        formsContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-form-btn')) {
+                e.target.closest('.song-form').remove();
+            }
+        });
+
+        // Submit all forms
+        submitAllBtn.addEventListener('click', async function() {
+            submitAllBtn.disabled = true;
+            submitAllBtn.textContent = 'Uploading...';
+            progressContainer.classList.remove('hidden');
+            errorDiv.classList.add('hidden');
+
+            try {
+                const forms = document.querySelectorAll('.song-form form');
+                for (let form of forms) {
+                    const index = form.dataset.formIndex;
+                    
+                    // Upload files
+                    const audioFormData = new FormData();
+                    audioFormData.append('file', document.getElementById(`audioFile-${index}`).files[0]);
+                    
+                    const coverFormData = new FormData();
+                    coverFormData.append('file', document.getElementById(`coverFile-${index}`).files[0]);
+
+                    const [audioRes, coverRes] = await Promise.all([
+                        fetch('http://localhost:5000/api/upload', {
+                            method: 'POST',
+                            body: audioFormData
+                        }).then(res => res.json()),
+                        fetch('http://localhost:5000/api/upload', {
+                            method: 'POST',
+                            body: coverFormData
+                        }).then(res => res.json())
+                    ]);
+
+                    const songData = {
+                        title: document.getElementById(`title-${index}`).value,
+                        artist: document.getElementById(`artist-${index}`).value,
+                        genre: document.getElementById(`genre-${index}`).value,
+                        audioUrl: audioRes.url,
+                        coverUrl: coverRes.url
+                    };
+
+                    const response = await fetch('http://localhost:5000/api/songs', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(songData)
+                    });
+
+                    if (!response.ok) throw new Error('Failed to create song');
+                }
+
+                alert('All songs uploaded successfully!');
+                location.reload(); // Reset the page
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitAllBtn.disabled = false;
+                submitAllBtn.textContent = 'Upload All Songs';
+                progressContainer.classList.add('hidden');
+                progressBar.style.width = '0%';
+            }
+        });
+    </script>
+</body>
+</html>
