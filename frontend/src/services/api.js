@@ -1,13 +1,17 @@
 import axios from 'axios';
 import * as mmb from 'music-metadata-browser';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://revify.onrender.com' || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://revify.onrender.com';
 
 const api = axios.create({
     baseURL: API_URL,
-    headers: { 'Content-Type': 'application/json' },
-    timeout: 300000, // Increase to 5 minutes
-    withCredentials: false // Set to false since we're using '*' for CORS
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    },
+    timeout: 15000,
+    withCredentials: false,
+    validateStatus: status => status >= 200 && status < 500
 });
 
 const retryDelay = (retryNumber = 0) => Math.min(1000 * (2 ** retryNumber), 10000);
@@ -38,6 +42,18 @@ api.interceptors.response.use(
 
 // Add retry configuration to requests
 const withRetry = config => ({ ...config, retry: true });
+
+// Add request interceptor for retries
+api.interceptors.request.use(
+    config => {
+        console.log(`Making ${config.method.toUpperCase()} request to ${config.url}`);
+        return config;
+    },
+    error => {
+        console.error('Request error:', error);
+        return Promise.reject(error);
+    }
+);
 
 export const checkAPIStatus = async () => {
     try {
@@ -137,16 +153,24 @@ export const uploadAudio = async (file, onProgress) => {
 
 export const fetchSongs = async () => {
     try {
-        const response = await api.get('/api/songs', withRetry());
-        console.log('Songs response:', response); // Add logging
+        console.log('Attempting to fetch songs from:', `${API_URL}/api/songs`);
+        const response = await api.get('/api/songs');
+        console.log('Songs response:', response);
+        
+        if (!response.data) {
+            throw new Error('No data received from server');
+        }
+        
         return response.data;
     } catch (error) {
-        console.error('Error fetching songs:', {
+        console.error('Detailed fetch error:', {
             message: error.message,
+            code: error.code,
             status: error.response?.status,
-            data: error.response?.data
+            data: error.response?.data,
+            config: error.config
         });
-        throw new Error('Failed to fetch songs: ' + (error.response?.data?.message || error.message));
+        throw new Error(`Failed to fetch songs: ${error.message}`);
     }
 };
 

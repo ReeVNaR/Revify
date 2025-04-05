@@ -20,12 +20,28 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware
 app.use(cors({
-    origin: '*',  // More permissive for testing. Change back to specific origins later
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://revifym.vercel.app',
+        'https://revify-ten.vercel.app'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true,
-    maxAge: 86400 // Cache preflight requests for 24 hours
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    credentials: false,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
+
+// Add headers middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    next();
+});
+
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
