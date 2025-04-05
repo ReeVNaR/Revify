@@ -20,20 +20,21 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'http://127.0.0.1:5500',
-        'https://revifym.vercel.app',
-        'https://revify-ten.vercel.app',
-        'https://revify.onrender.com'
-    ],
+    origin: '*',  // More permissive for testing. Change back to specific origins later
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true
+    credentials: true,
+    maxAge: 86400 // Cache preflight requests for 24 hours
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// Add request timeout middleware
+app.use((req, res, next) => {
+    req.setTimeout(300000); // 5 minutes
+    res.setTimeout(300000);
+    next();
+});
 
 // Define Song Schema
 const songSchema = new mongoose.Schema({

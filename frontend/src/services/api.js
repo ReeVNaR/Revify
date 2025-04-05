@@ -6,8 +6,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://revify.onrender.com' ||
 const api = axios.create({
     baseURL: API_URL,
     headers: { 'Content-Type': 'application/json' },
-    timeout: 5000,
-    withCredentials: true
+    timeout: 300000, // Increase to 5 minutes
+    withCredentials: false // Set to false since we're using '*' for CORS
 });
 
 const retryDelay = (retryNumber = 0) => Math.min(1000 * (2 ** retryNumber), 10000);
@@ -137,11 +137,16 @@ export const uploadAudio = async (file, onProgress) => {
 
 export const fetchSongs = async () => {
     try {
-        const response = await api.get('/api/songs');
+        const response = await api.get('/api/songs', withRetry());
+        console.log('Songs response:', response); // Add logging
         return response.data;
     } catch (error) {
-        console.error('Error fetching songs:', error);
-        throw error;
+        console.error('Error fetching songs:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+        throw new Error('Failed to fetch songs: ' + (error.response?.data?.message || error.message));
     }
 };
 
