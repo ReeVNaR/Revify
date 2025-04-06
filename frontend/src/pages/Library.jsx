@@ -12,7 +12,8 @@ const Library = () => {
         currentTrack,
         isPlaying,
         playlists, 
-        createPlaylist: handleCreatePlaylist 
+        createPlaylist: handleCreatePlaylist,
+        isPlaylistLoading
     } = useAudio();
     const [showModal, setShowModal] = useState(false);
     const [playlistName, setPlaylistName] = useState('');
@@ -48,6 +49,15 @@ const Library = () => {
         }
     };
 
+    // Show loading state while playlists are loading
+    if (isPlaylistLoading) {
+        return (
+            <div className="p-6 flex justify-center items-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-6 text-white">
             <div className="flex justify-between items-center mb-8">
@@ -62,22 +72,19 @@ const Library = () => {
 
             {/* Playlists Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {playlists.map(playlist => {
-                    // Find actual song objects for the playlist
-                    const playlistSongs = songs.filter(song => 
-                        playlist.songs && playlist.songs.includes(song._id)
-                    );
-                    
-                    return (
-                        <div
-                            key={playlist._id}
-                            onClick={() => navigate(`/playlist/${playlist._id}`)}
-                            className="bg-[#282828] p-4 rounded-lg cursor-pointer hover:bg-[#383838] transition-colors"
-                        >
-                            <div className="aspect-square bg-[#181818] mb-4 flex items-center justify-center">
-                                {playlistSongs.length > 0 ? (
-                                    <div className="grid grid-cols-2 w-full h-full">
-                                        {playlistSongs.slice(0, 4).map((song, idx) => (
+                {playlists.map(playlist => (
+                    <div
+                        key={playlist._id}
+                        onClick={() => navigate(`/playlist/${playlist._id}`)}
+                        className="bg-[#282828] p-4 rounded-lg cursor-pointer hover:bg-[#383838] transition-colors"
+                    >
+                        <div className="aspect-square bg-[#181818] mb-4 flex items-center justify-center">
+                            {playlist.songs && playlist.songs.length > 0 ? (
+                                <div className="grid grid-cols-2 w-full h-full">
+                                    {songs
+                                        .filter(song => playlist.songs.includes(song._id))
+                                        .slice(0, 4)
+                                        .map((song) => (
                                             <img 
                                                 key={song._id}
                                                 src={song.coverUrl} 
@@ -85,18 +92,19 @@ const Library = () => {
                                                 className="w-full h-full object-cover"
                                             />
                                         ))}
-                                    </div>
-                                ) : (
-                                    <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                                    </svg>
-                                )}
-                            </div>
-                            <h3 className="font-bold truncate">{playlist.name}</h3>
-                            <p className="text-sm text-gray-400">{playlistSongs.length} songs</p>
+                                </div>
+                            ) : (
+                                <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                                </svg>
+                            )}
                         </div>
-                    );
-                })}
+                        <h3 className="font-bold truncate">{playlist.name}</h3>
+                        <p className="text-sm text-gray-400">
+                            {playlist.songs ? playlist.songs.length : 0} songs
+                        </p>
+                    </div>
+                ))}
             </div>
 
             {/* Modal */}

@@ -33,6 +33,7 @@ const AudioProvider = ({ children }) => {
     // Add loading states
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isPlaylistLoading, setIsPlaylistLoading] = useState(true);
 
     // Save liked songs whenever they change
     useEffect(() => {
@@ -90,25 +91,44 @@ const AudioProvider = ({ children }) => {
         });
     }, []);
 
-    // Optimize audio initialization
+    // Add error handling for audio
+    const handleAudioError = useCallback((e) => {
+        console.error('Audio error:', e);
+        const errorMessage = e.target.error?.message || 'Failed to play audio';
+        setError(errorMessage);
+        setIsPlaying(false);
+        
+        // Reset audio element
+        const audio = audioRef.current;
+        audio.pause();
+        audio.currentTime = 0;
+    }, []);
+
+    // Update initializeAudio
     const initializeAudio = useCallback(() => {
         const audio = audioRef.current;
         audio.volume = volume;
         
-        const handleError = (e) => {
-            console.error('Audio error:', e);
-            setError('Failed to play audio');
-            setIsPlaying(false);
+        const handleLoadStart = () => {
+            // Reset error state on new load
+            setError(null);
         };
 
-        audio.addEventListener('error', handleError);
-        return () => audio.removeEventListener('error', handleError);
-    }, [volume]);
+        audio.addEventListener('error', handleAudioError);
+        audio.addEventListener('loadstart', handleLoadStart);
+        
+        return () => {
+            audio.removeEventListener('error', handleAudioError);
+            audio.removeEventListener('loadstart', handleLoadStart);
+        };
+    }, [volume, handleAudioError]);
 
-    // Optimize play function
+    // Update play function with better error handling
     const play = useCallback(async (track) => {
-        if (!track) return;
-        setError(null);
+        if (!track?.audioUrl) {
+            setError('Invalid audio track');
+            return;
+        }
 
         try {
             const audio = audioRef.current;
@@ -121,16 +141,23 @@ const AudioProvider = ({ children }) => {
                 return;
             }
 
+            // Reset audio state before changing track
+            audio.pause();
+            audio.currentTime = 0;
+            setError(null);
+            
             setCurrentTrack(track);
             audio.src = track.audioUrl;
             
-            if (isPlaying) {
-                await audio.play();
+            if (!isPlaying) {
+                setIsPlaying(true);
             }
             
+            await audio.play();
             addToHistory(track);
         } catch (error) {
-            setError('Failed to play track');
+            console.error('Playback error:', error);
+            setError('Failed to play track: ' + error.message);
             setIsPlaying(false);
         }
     }, [currentTrack, isPlaying, addToHistory]);
@@ -371,17 +398,52 @@ const AudioProvider = ({ children }) => {
         };
     }, [initializeAudio]);
 
+    // Update loadUserData with better playlist handling
+    useEffect(() => {
+        const loadUserData = async () => {
+            if (!user?.username) {
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                setIsPlaylistLoading(true);
+                const userData = await getUser(user.username);
+                
+                // Update playlists with full song data
+                const updatedPlaylists = userData.playlists.map(playlist => ({
+                    ...playlist,
+                    songs: songs.filter(song => playlist.songs.includes(song._id))
+                }));
+
+                setUser(userData);
+                setPlaylists(updatedPlaylists);
+                setLiked(new Set(userData.likedSongs?.map(song => song._id) || []));
+            } catch (error) {
+                console.error('Failed to load user data:', error);
+            } finally {
+                setIsPlaylistLoading(false);
+            }
+        };
+
+        loadUserData();
+    }, [user?.username, songs]);
+
     // Optimize playlist operations
     const handlePlaylistOperations = {
         create: async (name) => {
             if (!user) return;
+            setIsPlaylistLoading(true);
             try {
-                const updatedUser = await createPlaylist(user.username, name);
+                const updatedUser = await apiCreatePlaylist(user.username, name);
                 setUser(updatedUser);
+                setPlaylists(updatedUser.playlists || []);
                 return updatedUser;
             } catch (error) {
                 console.error('Failed to create playlist:', error);
                 throw error;
+            } finally {
+                setIsPlaylistLoading(false);
             }
         },
 
@@ -411,21 +473,21 @@ const AudioProvider = ({ children }) => {
 
         addSong: async (playlistId, songId) => {
             if (!user || !playlistId || !songId) return;
-            
+            setIsPlaylistLoading(true);
             try {
-                setIsLoading(true);
                 const updatedUser = await addSongToPlaylist(user.username, playlistId, songId);
-                
-                // Batch updates
+                const updatedPlaylists = updatedUser.playlists.map(playlist => ({
+                    ...playlist,
+                    songs: songs.filter(song => playlist.songs.includes(song._id))
+                }));
                 setUser(updatedUser);
-                setPlaylists(updatedUser.playlists || []);
-                
+                setPlaylists(updatedPlaylists);
                 return updatedUser;
             } catch (error) {
-                setError('Failed to add song to playlist');
+                console.error('Failed to add song to playlist:', error);
                 throw error;
             } finally {
-                setIsLoading(false);
+                setIsPlaylistLoading(false);
             }
         },
 
@@ -504,6 +566,7 @@ const AudioProvider = ({ children }) => {
             searchQuery,
             searchResults,
             handleSearch,
+            isPlaylistLoading,
         }}>
             {children}
         </AudioContext.Provider>

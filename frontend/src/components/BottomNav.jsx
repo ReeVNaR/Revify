@@ -49,7 +49,7 @@ const BottomNav = () => {
   return (
     <>
       {/* Mobile Navigation */}
-      <div className="md:hidden bg-[#181818] text-white border-t border-[#282828] fixed bottom-0 left-0 right-0">
+      <div className="md:hidden bg-[#181818] text-white border-t border-[#282828] fixed bottom-0 left-0 right-0 z-50">
         <div className="flex justify-around items-center py-3">
           {navItems.map((item) => (
             <Link 
@@ -69,7 +69,7 @@ const BottomNav = () => {
       </div>
 
       {/* Desktop Side Navigation */}
-      <div className="hidden md:flex fixed left-0 top-0 bottom-24 w-64 bg-gradient-to-b from-[#121212] to-[#181818] text-white border-r border-[#282828] flex-col p-6">
+      <div className="hidden md:flex fixed left-0 top-0 bottom-24 w-64 bg-gradient-to-b from-[#121212] to-[#181818] text-white border-r border-[#282828] flex-col p-6 z-40">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

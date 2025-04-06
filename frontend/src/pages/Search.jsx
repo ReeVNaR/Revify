@@ -25,7 +25,7 @@ const Search = () => {
                 const dateB = new Date(b.createdAt);
                 return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
             })
-            .slice(0, 12);
+            .slice(0, 4);  // Only take 4 songs
     }, [songs, sortOrder]);
 
     const handlePlayPause = (song, e) => {
@@ -38,27 +38,27 @@ const Search = () => {
     };
 
     return (
-        <div className="p-6 text-white">
-            <div className="mb-8">
+        <div className="p-2 pb-20 md:pb-2 text-white overflow-x-hidden">
+            <div className="mb-4">
                 <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
-                    placeholder="Search for songs or artists..."
-                    className="w-full px-4 py-3 bg-[#282828] rounded-lg text-white focus:outline-none"
+                    placeholder="Search..."
+                    className="w-full px-3 py-2 bg-[#282828] rounded-lg text-white focus:outline-none text-sm"
                 />
             </div>
 
             {!searchQuery && (
                 <>
                     {recentlyPlayed.length > 0 && (
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Recently Played</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                {recentlyPlayed.map(song => (
+                        <div className="mb-4">
+                            <h2 className="text-lg font-bold mb-2">Recently Played</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                                {recentlyPlayed.slice(0, 4).map(song => (
                                     <div 
                                         key={song._id}
-                                        className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
+                                        className="bg-[#181818] p-2 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
                                         onClick={() => navigate(`/songs/${song._id}`)}
                                     >
                                         <div className="relative mb-4 aspect-square">
@@ -90,24 +90,24 @@ const Search = () => {
                         </div>
                     )}
 
-                    <div className="mb-8">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">Recently Added</h2>
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <h2 className="text-lg font-bold">Recently Added</h2>
                             <button
                                 onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                                className="text-sm text-gray-400 hover:text-white flex items-center gap-2"
+                                className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
                             >
-                                Sort by Date
-                                <svg className={`w-4 h-4 transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                                Sort
+                                <svg className={`w-3 h-3 transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M7 10l5 5 5-5z"/>
                                 </svg>
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                             {recentlyAddedSongs.map(song => (
                                 <div 
                                     key={song._id}
-                                    className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
+                                    className="bg-[#181818] p-2 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
                                     onClick={() => navigate(`/songs/${song._id}`)}
                                 >
                                     <div className="relative mb-4 aspect-square">
@@ -142,12 +142,12 @@ const Search = () => {
 
             {searchQuery && (
                 <div>
-                    <h2 className="text-2xl font-bold mb-4">Search Results</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {searchResults.map(song => (
+                    <h2 className="text-lg font-bold mb-2">Search Results</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                        {searchResults.slice(0, 4).map(song => (
                             <div 
                                 key={song._id}
-                                className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
+                                className="bg-[#181818] p-2 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
                                 onClick={() => navigate(`/songs/${song._id}`)}
                             >
                                 <div className="relative mb-4 aspect-square">
