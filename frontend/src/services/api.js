@@ -1,13 +1,16 @@
 import axios from 'axios';
 import * as mmb from 'music-metadata-browser';
 
-const API_URL = 'http://localhost:5000';  // Update this line
+const LOCAL_URL = 'http://localhost:5000';
+const PROD_URL = 'https://revify.onrender.com';
+
+const API_BASE_URL = process.env.NODE_ENV === 'development' ? LOCAL_URL : PROD_URL;
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -49,7 +52,7 @@ const withRetry = config => ({ ...config, retry: true });
 // Add request interceptor for retries
 api.interceptors.request.use(
     config => {
-        console.log(`Making ${config.method.toUpperCase()} request to ${API_URL}${config.url}`);
+        console.log(`Making ${config.method.toUpperCase()} request to ${API_BASE_URL}${config.url}`);
         return config;
     },
     error => {
