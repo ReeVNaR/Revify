@@ -19,6 +19,8 @@ const AudioProvider = ({ children }) => {
     const [recentlyPlayed, setRecentlyPlayed] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
 
     const [user, setUser] = useState(() => {
         const savedUser = localStorage.getItem('user');
@@ -123,6 +125,13 @@ const AudioProvider = ({ children }) => {
         };
     }, [volume, handleAudioError]);
 
+    // Add time update handler
+    const handleTimeUpdate = useCallback(() => {
+        const audio = audioRef.current;
+        setProgress(audio.currentTime);
+        setDuration(audio.duration);
+    }, []);
+
     // Update play function with better state management
     const play = useCallback(async (track) => {
         if (!track?.audioUrl) {
@@ -132,6 +141,7 @@ const AudioProvider = ({ children }) => {
 
         try {
             const audio = audioRef.current;
+            audio.addEventListener('timeupdate', handleTimeUpdate);
             
             if (currentTrack?._id === track._id) {
                 await audio.play();
@@ -154,7 +164,7 @@ const AudioProvider = ({ children }) => {
             setError('Failed to play track');
             setIsPlaying(false);
         }
-    }, [currentTrack, addToHistory]);
+    }, [currentTrack, addToHistory, handleTimeUpdate]);
 
     // Update pause function
     const pause = useCallback(() => {
@@ -542,6 +552,13 @@ const AudioProvider = ({ children }) => {
         return () => audio.removeEventListener('ended', handleEnded);
     }, [playNext]);
 
+    // Add cleanup for time update
+    useEffect(() => {
+        const audio = audioRef.current;
+        audio.addEventListener('timeupdate', handleTimeUpdate);
+        return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
+    }, [handleTimeUpdate]);
+
     // Expose loading and error states
     return (
         <AudioContext.Provider value={{ 
@@ -589,6 +606,12 @@ const AudioProvider = ({ children }) => {
             searchResults,
             handleSearch,
             isPlaylistLoading,
+            progress,
+            duration,
+            setProgress: (time) => {
+                audioRef.current.currentTime = time;
+                setProgress(time);
+            }
         }}>
             {children}
         </AudioContext.Provider>

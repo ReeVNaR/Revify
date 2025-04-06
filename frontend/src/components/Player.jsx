@@ -2,10 +2,28 @@ import React, { useState } from 'react';
 import { useAudio } from '../context/AudioContext';
 
 const Player = () => {
-  const { currentTrack, isPlaying, play, pause, playNext, playPrevious, volume, setVolume } = useAudio();
+  const { 
+    currentTrack, 
+    isPlaying, 
+    play, 
+    pause, 
+    playNext, 
+    playPrevious, 
+    volume, 
+    setVolume,
+    progress,
+    duration,
+    setProgress
+  } = useAudio();
   const [isVolumeHovered, setIsVolumeHovered] = useState(false);
 
   if (!currentTrack) return null;
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-[#181818] border-t border-[#282828] px-4 py-3">
@@ -54,6 +72,18 @@ const Player = () => {
                 <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
               </svg>
             </button>
+          </div>
+          <div className="w-full flex items-center gap-2">
+            <span className="text-xs text-gray-400">{formatTime(progress)}</span>
+            <input
+              type="range"
+              min="0"
+              max={duration || 0}
+              value={progress}
+              onChange={(e) => setProgress(parseFloat(e.target.value))}
+              className="w-full h-1 bg-gray-600 rounded-full appearance-none"
+            />
+            <span className="text-xs text-gray-400">{formatTime(duration)}</span>
           </div>
         </div>
 
