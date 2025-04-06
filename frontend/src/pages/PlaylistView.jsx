@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -16,11 +16,26 @@ const PlaylistView = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [activeMenu, setActiveMenu] = useState(null);
     const [songToRemove, setSongToRemove] = useState(null);
+    const [playlistSongs, setPlaylistSongs] = useState([]);
 
-    const playlist = user?.playlists?.find(p => p._id === playlistId);
-    const playlistSongs = songs.filter(song => playlist?.songs.includes(song._id));
-    const availableSongs = songs.filter(song => !playlist?.songs.includes(song._id));
+    // Find playlist first
+    const playlist = user?.playlists?.find(p => p._id === playlistId) || { songs: [] };
 
+    // Add effect to load and sync playlist songs
+    useEffect(() => {
+        if (playlist?.songs && songs.length > 0) {
+            const currentPlaylistSongs = songs.filter(song => 
+                playlist.songs.includes(song._id)
+            );
+            setPlaylistSongs(currentPlaylistSongs);
+        }
+    }, [playlist?.songs, songs]);
+
+    const availableSongs = songs.filter(song => 
+        !playlist?.songs?.includes(song._id)
+    );
+
+    if (!user) return <LoadingSpinner />;
     if (!playlist) return <LoadingSpinner />;
 
     const handleNameUpdate = async (e) => {
@@ -45,25 +60,28 @@ const PlaylistView = () => {
         }
     };
 
+    // Update handleAddSong
     const handleAddSong = async (songId) => {
         try {
             await addSongToPlaylist(playlistId, songId);
-            // Force immediate re-render by updating the playlist songs
-            const updatedPlaylist = user.playlists.find(p => p._id === playlistId);
-            const updatedSongs = songs.filter(song => updatedPlaylist?.songs.includes(song._id));
+            const songToAdd = songs.find(s => s._id === songId);
+            if (songToAdd) {
+                setPlaylistSongs(prev => [...prev, songToAdd]);
+            }
             setShowAddSongs(false);
         } catch (err) {
             setError(err.message);
         }
     };
 
+    // Update handleRemoveSong
     const handleRemoveSong = async (songId) => {
         setSongToRemove(null);
         try {
             await removeSongFromPlaylist(playlistId, songId);
-            // Force immediate re-render by updating the playlist songs
-            const updatedPlaylist = user.playlists.find(p => p._id === playlistId);
-            const updatedSongs = songs.filter(song => updatedPlaylist?.songs.includes(song._id));
+            setPlaylistSongs(prev => 
+                prev.filter(song => song._id !== songId)
+            );
         } catch (err) {
             setError(err.message);
         }
