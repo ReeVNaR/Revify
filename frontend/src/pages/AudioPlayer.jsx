@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import AudioControls from '../components/AudioControls';
+import ProgressBar from '../components/ProgressBar';
 import { useAudio } from '../context/AudioContext';
 
 const AudioPlayer = memo(function AudioPlayer() {
@@ -40,27 +42,27 @@ const AudioPlayer = memo(function AudioPlayer() {
     }, []);
 
     const handleLoadedMetadata = () => {
-        setDuration(audioRef.current.duration);
+        setDuration(audioRef.current.duration || 0);
     };
 
     const handleTimeUpdate = () => {
         setCurrentTime(audioRef.current.currentTime);
     };
 
-    const handleSliderChange = (e) => {
+    const handleTimeChange = useCallback((e) => {
         const time = parseFloat(e.target.value);
         setCurrentTime(time);
         audioRef.current.currentTime = time;
-    };
+    }, []);
 
-    const togglePlayPause = () => {
+    const togglePlayPause = useCallback(() => {
         if (audioRef.current.paused) {
             audioRef.current.play();
         } else {
             audioRef.current.pause();
         }
-        setIsPlaying(!isPlaying);
-    };
+        setIsPlaying(prev => !prev);
+    }, []);
 
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
@@ -131,38 +133,16 @@ const AudioPlayer = memo(function AudioPlayer() {
                             className="hidden"
                         />
                         
-                        <div className="flex items-center justify-center mb-4">
-                            <button
-                                onClick={togglePlayPause}
-                                className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                            >
-                                {isPlaying ? (
-                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                )}
-                            </button>
-                        </div>
+                        <AudioControls 
+                            isPlaying={isPlaying}
+                            onPlayPause={togglePlayPause}
+                        />
 
-                        <div className="space-y-2">
-                            <input
-                                type="range"
-                                min="0"
-                                max={duration}
-                                value={currentTime}
-                                onChange={handleSliderChange}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <div className="flex justify-between text-sm text-gray-500">
-                                <span>{formatTime(currentTime)}</span>
-                                <span>{formatTime(duration)}</span>
-                            </div>
-                        </div>
+                        <ProgressBar 
+                            currentTime={currentTime}
+                            duration={duration}
+                            onTimeChange={handleTimeChange}
+                        />
                     </div>
                 )}
             </div>

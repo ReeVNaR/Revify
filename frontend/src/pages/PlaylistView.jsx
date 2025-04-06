@@ -19,24 +19,27 @@ const PlaylistView = () => {
     const [playlistSongs, setPlaylistSongs] = useState([]);
 
     // Find playlist first
-    const playlist = user?.playlists?.find(p => p._id === playlistId) || { songs: [] };
+    const playlist = user?.playlists?.find(p => p._id === playlistId);
 
-    // Add effect to load and sync playlist songs
+    // Update effect to load and sync playlist songs
     useEffect(() => {
-        if (playlist?.songs && songs.length > 0) {
-            const currentPlaylistSongs = songs.filter(song => 
-                playlist.songs.includes(song._id)
-            );
-            setPlaylistSongs(currentPlaylistSongs);
-        }
-    }, [playlist?.songs, songs]);
+        if (!playlist) return;
+        
+        const loadPlaylistSongs = () => {
+            if (playlist.songs && Array.isArray(playlist.songs)) {
+                setPlaylistSongs(playlist.songs);
+            }
+        };
+
+        loadPlaylistSongs();
+    }, [playlist]);
 
     const availableSongs = songs.filter(song => 
-        !playlist?.songs?.includes(song._id)
+        !playlistSongs.some(ps => ps._id === song._id)
     );
 
     if (!user) return <LoadingSpinner />;
-    if (!playlist) return <LoadingSpinner />;
+    if (!playlist) return <div className="p-6 text-white">Playlist not found</div>;
 
     const handleNameUpdate = async (e) => {
         e.preventDefault();
@@ -63,10 +66,9 @@ const PlaylistView = () => {
     // Update handleAddSong
     const handleAddSong = async (songId) => {
         try {
-            await addSongToPlaylist(playlistId, songId);
-            const songToAdd = songs.find(s => s._id === songId);
-            if (songToAdd) {
-                setPlaylistSongs(prev => [...prev, songToAdd]);
+            const updatedPlaylist = await addSongToPlaylist(playlistId, songId);
+            if (updatedPlaylist) {
+                setPlaylistSongs(updatedPlaylist.songs);
             }
             setShowAddSongs(false);
         } catch (err) {
@@ -78,10 +80,10 @@ const PlaylistView = () => {
     const handleRemoveSong = async (songId) => {
         setSongToRemove(null);
         try {
-            await removeSongFromPlaylist(playlistId, songId);
-            setPlaylistSongs(prev => 
-                prev.filter(song => song._id !== songId)
-            );
+            const updatedPlaylist = await removeSongFromPlaylist(playlistId, songId);
+            if (updatedPlaylist) {
+                setPlaylistSongs(updatedPlaylist.songs);
+            }
         } catch (err) {
             setError(err.message);
         }
@@ -125,7 +127,7 @@ const PlaylistView = () => {
                                     >
                                         {isLoading ? 'Saving...' : 'Save'}
                                     </button>
-                                    <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-[#282828] rounded-full">Cancel</button>
+                                    <button type="button" onClick={() => { setIsEditing(false); setError(''); }} className="px-4 py-2 bg-[#282828] rounded-full">Cancel</button>
                                 </div>
                             </form>
                         ) : (

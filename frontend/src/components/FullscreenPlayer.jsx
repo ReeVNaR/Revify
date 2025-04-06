@@ -13,6 +13,18 @@ const FullscreenPlayer = ({ onClose }) => {
         }
     }, [currentTime, duration]);
 
+    useEffect(() => {
+        const audio = audioRef.current;
+        const updateTime = () => {
+            setProgress((audio.currentTime / duration) * 100);
+        };
+
+        audio.addEventListener('timeupdate', updateTime);
+        return () => {
+            audio.removeEventListener('timeupdate', updateTime);
+        };
+    }, [duration]);
+
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);

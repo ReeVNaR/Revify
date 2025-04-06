@@ -100,7 +100,7 @@ const SongView = () => {
                 ) : (
                   <>
                     <span>Play</span>
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 24 24">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"/>
                     </svg>
                   </>
@@ -123,7 +123,7 @@ const SongView = () => {
       </div>
 
       {/* Related Songs Section */}
-      {relatedSongs.length > 0 && (
+      {relatedSongs.length > 0 ? (
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">More from {song.artist}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -146,31 +146,37 @@ const SongView = () => {
             ))}
           </div>
         </div>
+      ) : (
+        <div className="text-gray-400 text-center mb-8">No related songs found.</div>
       )}
 
       {/* Random Songs Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">You might also like</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {randomSongs.map(song => (
-            <div 
-              key={song._id}
-              onClick={() => navigate(`/songs/${song._id}`)}
-              className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative mb-4 aspect-square">
-                <img 
-                  src={song.coverUrl} 
-                  alt={song.title}
-                  className="w-full h-full object-cover rounded-md"
-                />
+      {randomSongs.length > 0 ? (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">You might also like</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {randomSongs.map(song => (
+              <div 
+                key={song._id}
+                onClick={() => navigate(`/songs/${song._id}`)}
+                className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 cursor-pointer"
+              >
+                <div className="relative mb-4 aspect-square">
+                  <img 
+                    src={song.coverUrl} 
+                    alt={song.title}
+                    className="w-full h-full object-cover rounded-md"
+                  />
+                </div>
+                <h3 className="font-semibold text-white truncate">{song.title}</h3>
+                <p className="text-sm text-gray-400 truncate">{song.artist}</p>
               </div>
-              <h3 className="font-semibold text-white truncate">{song.title}</h3>
-              <p className="text-sm text-gray-400 truncate">{song.artist}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-gray-400 text-center mb-8">No recommendations available.</div>
+      )}
     </div>
   );
 };

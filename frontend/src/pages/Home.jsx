@@ -64,12 +64,12 @@ function Home() {
         </p>
       </div>
       
-      {/* Recently Played Grid */}
+      {/* Recently Played Section */}
       {recentlyPlayed.length > 0 && (
-        <div className="mb-8">
+        <section className="mb-8">
           <h2 className="text-2xl font-bold text-white mb-4">Recently Played</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {recentlyPlayed.map((song) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {recentlyPlayed.slice(0, 8).map((song) => (
               <div 
                 key={song._id}
                 onClick={() => handleSongClick(song)}
@@ -103,7 +103,7 @@ function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Made for you Section */}

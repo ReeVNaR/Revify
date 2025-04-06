@@ -4,7 +4,10 @@ import { fetchSongs, createUser, loginUser, getUser, toggleLikeSong, createPlayl
 const AudioContext = createContext();
 
 const AudioProvider = ({ children }) => {
-    const [currentTrack, setCurrentTrack] = useState(null);
+    const [currentTrack, setCurrentTrack] = useState(() => {
+        const saved = localStorage.getItem('currentTrack');
+        return saved ? JSON.parse(saved) : null;
+    });
     const [isPlaying, setIsPlaying] = useState(false);
     const [songs, setSongs] = useState([]);
     const [volume, setVolume] = useState(1);
@@ -36,6 +39,7 @@ const AudioProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isPlaylistLoading, setIsPlaylistLoading] = useState(true);
+    const [hasInteracted, setHasInteracted] = useState(false);
 
     // Save liked songs whenever they change
     useEffect(() => {
@@ -132,45 +136,53 @@ const AudioProvider = ({ children }) => {
         setDuration(audio.duration);
     }, []);
 
-    // Update play function with better state management
+    // Add audio event listeners for play/pause sync
+    useEffect(() => {
+        const audio = audioRef.current;
+        
+        const handlePlay = () => setIsPlaying(true);
+        const handlePause = () => setIsPlaying(false);
+        const handleEnded = () => setIsPlaying(false);
+        
+        audio.addEventListener('play', handlePlay);
+        audio.addEventListener('pause', handlePause);
+        audio.addEventListener('ended', handleEnded);
+        
+        return () => {
+            audio.removeEventListener('play', handlePlay);
+            audio.removeEventListener('pause', handlePause);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, []);
+
+    // Update play function
     const play = useCallback(async (track) => {
-        if (!track?.audioUrl) {
-            setError('Invalid audio track');
-            return;
-        }
+        if (!track?.audioUrl) return;
 
+        const audio = audioRef.current;
+        
         try {
-            const audio = audioRef.current;
-            audio.addEventListener('timeupdate', handleTimeUpdate);
-            
-            if (currentTrack?._id === track._id) {
-                await audio.play();
-                setIsPlaying(true);
-                return;
+            if (currentTrack?._id !== track._id) {
+                audio.pause();
+                setCurrentTrack(track);
+                audio.src = track.audioUrl;
+                audio.volume = volume;
             }
-
-            // Stop current playback before switching tracks
-            audio.pause();
-            audio.currentTime = 0;
-            setIsPlaying(false);
             
-            setCurrentTrack(track);
-            audio.src = track.audioUrl;
-            await audio.play();
             setIsPlaying(true);
+            await audio.play();
             addToHistory(track);
         } catch (error) {
             console.error('Playback error:', error);
-            setError('Failed to play track');
             setIsPlaying(false);
         }
-    }, [currentTrack, addToHistory, handleTimeUpdate]);
+    }, [currentTrack, volume, addToHistory]);
 
     // Update pause function
     const pause = useCallback(() => {
         const audio = audioRef.current;
-        audio.pause();
         setIsPlaying(false);
+        audio.pause();
     }, []);
 
     const shuffleAllSongs = useCallback(() => {
@@ -203,11 +215,17 @@ const AudioProvider = ({ children }) => {
             return;
         }
 
+        // Handle repeat mode
+        if (repeat === 'one') {
+            play(currentTrack);
+            return;
+        }
+
         // Normal sequential play
         const currentIndex = songs.findIndex(song => song._id === currentTrack._id);
         const nextIndex = (currentIndex + 1) % songs.length;
         play(songs[nextIndex]);
-    }, [currentTrack, songs, queue, shuffle, shuffledQueue, play]);
+    }, [currentTrack, songs, queue, shuffle, shuffledQueue, play, repeat]);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -407,7 +425,7 @@ const AudioProvider = ({ children }) => {
     // Update loadUserData with better playlist handling
     useEffect(() => {
         const loadUserData = async () => {
-            if (!user?.username) {
+            if (!user?.username || songs.length === 0) {
                 setIsLoading(false);
                 return;
             }
@@ -416,14 +434,22 @@ const AudioProvider = ({ children }) => {
                 setIsPlaylistLoading(true);
                 const userData = await getUser(user.username);
                 
-                // Update playlists with full song data
-                const updatedPlaylists = userData.playlists.map(playlist => ({
-                    ...playlist,
-                    songs: songs.filter(song => playlist.songs.includes(song._id))
-                }));
+                // Map playlists with full song objects
+                const updatedPlaylists = userData.playlists.map(playlist => {
+                    const playlistSongIds = playlist.songs || [];
+                    const fullSongs = playlistSongIds
+                        .map(songId => songs.find(s => s._id === songId))
+                        .filter(Boolean);
+                        
+                    return {
+                        ...playlist,
+                        songs: fullSongs
+                    };
+                });
 
-                setUser(userData);
+                console.log('Updated playlists:', updatedPlaylists); // Debug log
                 setPlaylists(updatedPlaylists);
+                setUser(userData);
                 setLiked(new Set(userData.likedSongs?.map(song => song._id) || []));
             } catch (error) {
                 console.error('Failed to load user data:', error);
@@ -442,9 +468,20 @@ const AudioProvider = ({ children }) => {
             setIsPlaylistLoading(true);
             try {
                 const updatedUser = await apiCreatePlaylist(user.username, name);
+                const newPlaylist = {
+                    ...updatedUser.playlists[updatedUser.playlists.length - 1],
+                    songs: [] // Initialize with empty songs array
+                };
+                
+                // Update playlists with the new empty playlist
+                const updatedPlaylists = [
+                    ...playlists,
+                    newPlaylist
+                ];
+                
                 setUser(updatedUser);
-                setPlaylists(updatedUser.playlists || []);
-                return updatedUser;
+                setPlaylists(updatedPlaylists);
+                return newPlaylist;
             } catch (error) {
                 console.error('Failed to create playlist:', error);
                 throw error;
@@ -457,7 +494,12 @@ const AudioProvider = ({ children }) => {
             if (!user) return;
             try {
                 const updatedUser = await deletePlaylist(user.username, playlistId);
+                const updatedPlaylists = updatedUser.playlists.map(playlist => ({
+                    ...playlist,
+                    songs: songs.filter(song => playlist.songs.includes(song._id))
+                }));
                 setUser(updatedUser);
+                setPlaylists(updatedPlaylists);
                 return updatedUser;
             } catch (error) {
                 console.error('Failed to delete playlist:', error);
@@ -479,21 +521,26 @@ const AudioProvider = ({ children }) => {
 
         addSong: async (playlistId, songId) => {
             if (!user || !playlistId || !songId) return;
-            setIsPlaylistLoading(true);
             try {
                 const updatedUser = await addSongToPlaylist(user.username, playlistId, songId);
-                const updatedPlaylists = updatedUser.playlists.map(playlist => ({
-                    ...playlist,
-                    songs: songs.filter(song => playlist.songs.includes(song._id))
-                }));
+                const songToAdd = songs.find(s => s._id === songId);
+                
+                const updatedPlaylists = playlists.map(playlist => {
+                    if (playlist._id === playlistId && songToAdd) {
+                        return {
+                            ...playlist,
+                            songs: [...(playlist.songs || []), songToAdd]
+                        };
+                    }
+                    return playlist;
+                });
+
                 setUser(updatedUser);
                 setPlaylists(updatedPlaylists);
-                return updatedUser;
+                return updatedPlaylists.find(p => p._id === playlistId);
             } catch (error) {
                 console.error('Failed to add song to playlist:', error);
                 throw error;
-            } finally {
-                setIsPlaylistLoading(false);
             }
         },
 
@@ -501,10 +548,20 @@ const AudioProvider = ({ children }) => {
             if (!user) return;
             try {
                 const updatedUser = await removeSongFromPlaylist(user.username, playlistId, songId);
+                
+                const updatedPlaylists = playlists.map(playlist => {
+                    if (playlist._id === playlistId) {
+                        return {
+                            ...playlist,
+                            songs: playlist.songs.filter(song => song._id !== songId)
+                        };
+                    }
+                    return playlist;
+                });
+
                 setUser(updatedUser);
-                // Update playlists state directly
-                setPlaylists(updatedUser.playlists || []);
-                return updatedUser;
+                setPlaylists(updatedPlaylists);
+                return updatedPlaylists.find(p => p._id === playlistId);
             } catch (error) {
                 console.error('Failed to remove song from playlist:', error);
                 throw error;
@@ -559,6 +616,58 @@ const AudioProvider = ({ children }) => {
         return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
     }, [handleTimeUpdate]);
 
+    // Save current track to localStorage when it changes
+    useEffect(() => {
+        if (currentTrack) {
+            localStorage.setItem('currentTrack', JSON.stringify(currentTrack));
+        } else {
+            localStorage.removeItem('currentTrack');
+        }
+    }, [currentTrack]);
+
+    // Handle page reload
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (currentTrack) {
+                localStorage.setItem('audioTime', audioRef.current.currentTime);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [currentTrack]);
+
+    // Restore audio state on mount
+    useEffect(() => {
+        const savedTrack = localStorage.getItem('currentTrack');
+        const savedTime = localStorage.getItem('audioTime');
+        
+        if (savedTrack) {
+            const track = JSON.parse(savedTrack);
+            setCurrentTrack(track);
+            if (savedTime) {
+                audioRef.current.currentTime = parseFloat(savedTime);
+            }
+        }
+    }, []);
+
+    // Add interaction listener
+    useEffect(() => {
+        const handleInteraction = () => {
+            setHasInteracted(true);
+        };
+
+        document.addEventListener('click', handleInteraction);
+        document.addEventListener('touchstart', handleInteraction);
+        document.addEventListener('keydown', handleInteraction);
+
+        return () => {
+            document.removeEventListener('click', handleInteraction);
+            document.removeEventListener('touchstart', handleInteraction);
+            document.removeEventListener('keydown', handleInteraction);
+        };
+    }, []);
+
     // Expose loading and error states
     return (
         <AudioContext.Provider value={{ 
@@ -611,7 +720,8 @@ const AudioProvider = ({ children }) => {
             setProgress: (time) => {
                 audioRef.current.currentTime = time;
                 setProgress(time);
-            }
+            },
+            hasInteracted
         }}>
             {children}
         </AudioContext.Provider>

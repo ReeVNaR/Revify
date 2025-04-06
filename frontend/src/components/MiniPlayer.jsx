@@ -5,14 +5,30 @@ import { useNavigate } from 'react-router-dom';
 import FullscreenPlayer from './FullscreenPlayer';
 
 const MiniPlayer = () => {
-    const { currentTrack, isPlaying, play, pause, audioRef, toggleRepeat, toggleShuffle, repeat, shuffle, liked, toggleLike } = useAudio();
+    const { 
+        currentTrack, 
+        isPlaying, 
+        play, 
+        pause, 
+        audioRef,  // Use this single audioRef from context
+        toggleRepeat, 
+        toggleShuffle, 
+        repeat, 
+        shuffle, 
+        liked, 
+        toggleLike 
+    } = useAudio();
+    
     const { playNext, playPrevious } = useAudioNavigation();
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [progress, setProgress] = useState(0);
     const [showVolume, setShowVolume] = useState(false);
-    const [volume, setVolume] = useState(1);
+    const [volume, setVolume] = useState(() => {
+        const savedVolume = localStorage.getItem('volume');
+        return savedVolume ? parseFloat(savedVolume) : 1;
+    });
     const navigate = useNavigate();
 
     const updateProgress = useCallback(() => {
@@ -61,19 +77,30 @@ const MiniPlayer = () => {
         }
     }, []);
 
-    // Add effect to sync with audio state
+    // Handle audio state restoration
+    useEffect(() => {
+        if (currentTrack && audioRef.current) {
+            const savedTime = localStorage.getItem('audioTime');
+            if (savedTime) {
+                audioRef.current.currentTime = parseFloat(savedTime);
+                setCurrentTime(parseFloat(savedTime));
+                updateProgress();
+            }
+        }
+    }, [currentTrack]);
+
     useEffect(() => {
         const audio = audioRef.current;
-        const updatePlayingState = () => setIsPlaying(!audio.paused);
-        
-        audio.addEventListener('play', updatePlayingState);
-        audio.addEventListener('pause', updatePlayingState);
-        
-        return () => {
-            audio.removeEventListener('play', updatePlayingState);
-            audio.removeEventListener('pause', updatePlayingState);
+        const updateTime = () => {
+            setCurrentTime(audio.currentTime);
+            updateProgress();
         };
-    }, []);
+
+        audio.addEventListener('timeupdate', updateTime);
+        return () => {
+            audio.removeEventListener('timeupdate', updateTime);
+        };
+    }, [updateProgress]);
 
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
@@ -81,15 +108,27 @@ const MiniPlayer = () => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const handleProgressClick = (e) => {
+    const handleProgressClick = useCallback((e) => {
         const bounds = e.currentTarget.getBoundingClientRect();
         const percent = (e.clientX - bounds.left) / bounds.width;
-        if (duration) {
-            audioRef.current.currentTime = percent * duration;
-            setCurrentTime(percent * duration);
+        const audio = audioRef.current;
+        
+        if (audio && duration) {
+            const newTime = percent * duration;
+            audio.currentTime = newTime;
+            setCurrentTime(newTime);
             setProgress(percent * 100);
         }
-    };
+    }, [duration, audioRef]);
+
+    // Modify handleProgressChange to handle range input changes
+    const handleProgressChange = useCallback((e) => {
+        const newProgress = parseFloat(e.target.value);
+        const newTime = (newProgress / 100) * duration;
+        audioRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+        setProgress(newProgress);
+    }, [duration]);
 
     const handleSongInfoClick = () => {
         navigate(`/songs/${currentTrack._id}`);
@@ -105,116 +144,285 @@ const MiniPlayer = () => {
         playPrevious(false); // Pass false to disable navigation
     };
 
-    const handleVolumeChange = (e) => {
-        const newVolume = parseFloat(e.target.value);
-        setVolume(newVolume);
-        localStorage.setItem('volume', newVolume);
-    };
-
     const handleCoverClick = (e) => {
         e.stopPropagation();
         setIsFullscreen(true);
     };
 
-    if (!currentTrack) return null;
+    const handlePlayPause = useCallback(() => {
+        if (!currentTrack) return;
+        
+        console.log('PlayPause:', { isPlaying, trackId: currentTrack._id });
+        
+        if (isPlaying) {
+            pause();
+        } else {
+            play(currentTrack);
+        }
+    }, [currentTrack, isPlaying, play, pause]);
+
+    const EmptyState = () => (
+        <div className="flex items-center min-w-[180px] max-w-[300px] w-[30%]">
+            <div className="w-14 h-14 bg-[#282828] rounded shadow-lg flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+            </div>
+            <div className="ml-4">
+                <div className="h-4 w-32 bg-[#282828] rounded"></div>
+                <div className="h-3 w-24 bg-[#282828] rounded mt-2"></div>
+            </div>
+        </div>
+    );
+
+    // Update progress tracking
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const handleTimeUpdate = () => {
+            setCurrentTime(audio.currentTime);
+            if (audio.duration) {
+                setProgress((audio.currentTime / audio.duration) * 100);
+            }
+        };
+
+        const handleLoadedMetadata = () => {
+            setDuration(audio.duration);
+            // Reset progress when new track loads
+            setProgress(0);
+            setCurrentTime(0);
+        };
+
+        audio.addEventListener('timeupdate', handleTimeUpdate);
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+        return () => {
+            audio.removeEventListener('timeupdate', handleTimeUpdate);
+            audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        };
+    }, [audioRef]);
+
+    // Single volume initialization effect
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const savedVolume = localStorage.getItem('volume');
+        const initialVolume = savedVolume ? parseFloat(savedVolume) : 1;
+        setVolume(initialVolume);
+        audio.volume = initialVolume;
+
+        return () => {
+            localStorage.setItem('volume', volume.toString());
+        };
+    }, []);
+
+    // Single volume change handler
+    const handleVolumeChange = useCallback((e) => {
+        const newVolume = parseFloat(e.target.value);
+        setVolume(newVolume);
+        audioRef.current.volume = newVolume;
+        localStorage.setItem('volume', newVolume.toString());
+    }, [audioRef]);
+
+    // Add effect to handle track changes
+    useEffect(() => {
+        if (currentTrack && isPlaying) {
+            play(currentTrack);
+        }
+    }, [currentTrack?._id]); // Only trigger on track ID change
+
+    const getVolumeIcon = () => {
+        if (volume === 0) {
+            return (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+            );
+        } else if (volume < 0.5) {
+            return (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                </svg>
+            );
+        } else {
+            return (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+            );
+        }
+    };
+
+    const handleVolumeClick = useCallback(() => {
+        const newVolume = volume === 0 ? 1 : 0;
+        setVolume(newVolume);
+        audioRef.current.volume = newVolume;
+        localStorage.setItem('volume', newVolume.toString());
+    }, [volume]);
 
     return (
         <>
             <div className="fixed bottom-[4rem] md:bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] px-4 backdrop-blur-lg bg-opacity-95 z-50">
                 <div className="max-w-screen-2xl mx-auto h-full flex items-center justify-between gap-4">
-                    {/* Track Info */}
-                    <div 
-                        onClick={handleSongInfoClick}
-                        className="flex items-center min-w-[180px] max-w-[300px] w-[30%] cursor-pointer"
-                    >
-                        <img 
-                            src={currentTrack.coverUrl} 
-                            alt={currentTrack.title} 
-                            className="w-14 h-14 rounded shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={handleCoverClick}
-                        />
-                        <div className="ml-4 overflow-hidden">
-                            <h4 className="text-sm text-white font-medium truncate hover:underline cursor-pointer">
-                                {currentTrack.title}
-                            </h4>
-                            <p className="text-xs text-gray-400 truncate hover:underline cursor-pointer">
-                                {currentTrack.artist}
-                            </p>
-                        </div>
-                    </div>
+                    {currentTrack ? (
+                        <>
+                            {/* Track Info */}
+                            <div 
+                                onClick={handleSongInfoClick}
+                                className="flex items-center min-w-[180px] max-w-[300px] w-[30%] cursor-pointer"
+                            >
+                                <img 
+                                    src={currentTrack.coverUrl} 
+                                    alt={currentTrack.title} 
+                                    className="w-14 h-14 rounded shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={handleCoverClick}
+                                />
+                                <div className="ml-4 overflow-hidden">
+                                    <h4 className="text-sm text-white font-medium truncate hover:underline cursor-pointer">
+                                        {currentTrack.title}
+                                    </h4>
+                                    <p className="text-xs text-gray-400 truncate hover:underline cursor-pointer">
+                                        {currentTrack.artist}
+                                    </p>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <EmptyState />
+                    )}
 
-                    {/* Player Controls */}
-                    <div className="flex flex-col items-center max-w-[40%] w-full">
-                        <div className="flex items-center gap-4 mb-2">
-                            <button onClick={handlePreviousClick} className="text-gray-400 hover:text-white transition-colors">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 16.811c0 .864-.933 1.405-1.683.977l-7.108-4.062a1.125 1.125 0 010-1.953l7.108-4.062A1.125 1.125 0 0121 8.688v8.123zM11.25 16.811c0 .864-.933 1.405-1.683.977l-7.108-4.062a1.125 1.125 0 010-1.953L9.567 7.71a1.125 1.125 0 011.683.977v8.123z" />
+                    <div className={`flex flex-col items-center max-w-[40%] w-full ${!currentTrack ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {/* Player Controls */}
+                        <div className="flex items-center gap-6 mb-2">
+                            <button onClick={handlePreviousClick} className="text-[#b3b3b3] hover:text-white transition-colors">
+                                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" />
                                 </svg>
                             </button>
-                            <button onClick={() => isPlaying ? pause() : play(currentTrack)} className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform">
+                            <button 
+                                onClick={handlePlayPause}
+                                className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform"
+                                disabled={!currentTrack}
+                            >
                                 {isPlaying ? (
-                                    <svg className="w-5 h-5" fill="black" viewBox="0 0 24 24">
-                                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="black">
+                                        <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"/>
                                     </svg>
                                 ) : (
-                                    <svg className="w-5 h-5 ml-0.5" fill="black" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
+                                    <svg className="w-4 h-4 ml-0.5" viewBox="0 0 16 16" fill="black">
+                                        <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"/>
                                     </svg>
                                 )}
                             </button>
-                            <button onClick={handleNextClick} className="text-gray-400 hover:text-white transition-colors">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8.688c0-.864.933-1.405 1.683-.977l7.108 4.062a1.125 1.125 0 010 1.953l-7.108 4.062A1.125 1.125 0 013 16.81V8.688zM12.75 8.688c0-.864.933-1.405 1.683-.977l7.108 4.062a1.125 1.125 0 010 1.953l-7.108 4.062a1.125 1.125 0 01-1.683-.977V8.688z" />
+                            <button onClick={handleNextClick} className="text-[#b3b3b3] hover:text-white transition-colors">
+                                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"/>
                                 </svg>
                             </button>
                         </div>
                         <div className="w-full flex items-center gap-2 text-[11px] text-gray-400">
                             <span className="w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
-                            <div 
-                                className="flex-1 h-1 group bg-gray-600 rounded-full cursor-pointer"
-                                onClick={handleProgressClick}
-                            >
-                                <div 
-                                    className="h-full bg-white group-hover:bg-green-500 rounded-full relative transition-all duration-200"
-                                    style={{ width: `${progress}%` }}
-                                >
-                                    <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg transition-opacity duration-200" />
-                                </div>
+                            <div className="flex-1">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    value={progress}
+                                    onChange={handleProgressChange}
+                                    className="w-full h-1 rounded-full appearance-none cursor-pointer
+                                        bg-[#4d4d4d] 
+                                        relative
+                                        before:absolute
+                                        before:h-full
+                                        before:bg-white
+                                        before:rounded-full
+                                        hover:before:bg-green-500
+                                        group-hover:before:bg-green-500
+                                        [&::-webkit-slider-thumb]:appearance-none 
+                                        [&::-webkit-slider-thumb]:h-3
+                                        [&::-webkit-slider-thumb]:w-3
+                                        [&::-webkit-slider-thumb]:rounded-full
+                                        [&::-webkit-slider-thumb]:bg-white
+                                        [&::-webkit-slider-thumb]:invisible
+                                        hover:[&::-webkit-slider-thumb]:visible
+                                        [&::-moz-range-thumb]:h-3
+                                        [&::-moz-range-thumb]:w-3
+                                        [&::-moz-range-thumb]:rounded-full
+                                        [&::-moz-range-thumb]:bg-white
+                                        [&::-moz-range-thumb]:border-0
+                                        [&::-moz-range-thumb]:invisible
+                                        hover:[&::-moz-range-thumb]:visible
+                                        [&::-moz-range-progress]:bg-white
+                                        [&::-moz-range-progress]:rounded-full
+                                        hover:[&::-moz-range-progress]:bg-green-500
+                                        [&::-webkit-slider-runnable-track]:bg-transparent
+                                        [&::-moz-range-track]:bg-transparent"
+                                    style={{
+                                        backgroundImage: `linear-gradient(to right, white ${progress}%, #4d4d4d ${progress}%)`,
+                                    }}
+                                />
                             </div>
                             <span className="w-10 tabular-nums">{formatTime(duration || 0)}</span>
                         </div>
                     </div>
 
-                    {/* Volume Controls */}
-                    <div className="flex items-center justify-end min-w-[180px] w-[30%]">
-                        <div className="relative ml-4">
+                    <div className={`flex items-center justify-end min-w-[180px] w-[30%] ${!currentTrack ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {/* Volume Controls */}
+                        <div className="flex items-center gap-2">
                             <button
-                                onMouseEnter={() => setShowVolume(true)}
-                                onMouseLeave={() => setShowVolume(false)}
+                                onClick={handleVolumeClick}
                                 className="text-gray-400 hover:text-white p-2"
                             >
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                                </svg>
+                                {getVolumeIcon()}
                             </button>
-                            {showVolume && (
-                                <div
-                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-[#282828] rounded-lg shadow-lg"
-                                    onMouseEnter={() => setShowVolume(true)}
-                                    onMouseLeave={() => setShowVolume(false)}
-                                >
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.01"
-                                        value={volume}
-                                        onChange={handleVolumeChange}
-                                        className="w-24 h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
-                                    />
-                                </div>
-                            )}
+                            <div className="w-24">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.01"
+                                    value={volume}
+                                    onChange={handleVolumeChange}
+                                    className="w-full h-1 rounded-full appearance-none cursor-pointer
+                                        bg-[#4d4d4d] 
+                                        relative
+                                        before:absolute
+                                        before:h-full
+                                        before:bg-white
+                                        before:rounded-full
+                                        hover:before:bg-green-500
+                                        group-hover:before:bg-green-500
+                                        [&::-webkit-slider-thumb]:appearance-none 
+                                        [&::-webkit-slider-thumb]:h-3
+                                        [&::-webkit-slider-thumb]:w-3
+                                        [&::-webkit-slider-thumb]:rounded-full
+                                        [&::-webkit-slider-thumb]:bg-white
+                                        [&::-webkit-slider-thumb]:invisible
+                                        hover:[&::-webkit-slider-thumb]:visible
+                                        [&::-moz-range-thumb]:h-3
+                                        [&::-moz-range-thumb]:w-3
+                                        [&::-moz-range-thumb]:rounded-full
+                                        [&::-moz-range-thumb]:bg-white
+                                        [&::-moz-range-thumb]:border-0
+                                        [&::-moz-range-thumb]:invisible
+                                        hover:[&::-moz-range-thumb]:visible
+                                        [&::-moz-range-progress]:bg-white
+                                        [&::-moz-range-progress]:rounded-full
+                                        hover:[&::-moz-range-progress]:bg-green-500
+                                        [&::-webkit-slider-runnable-track]:bg-transparent
+                                        [&::-moz-range-track]:bg-transparent"
+                                    style={{
+                                        backgroundImage: `linear-gradient(to right, white ${volume * 100}%, #4d4d4d ${volume * 100}%)`,
+                                    }}
+                                />
+                            </div>
                         </div>
+                        
+                        {/* Other controls (like, shuffle, repeat) */}
                         <button
                             onClick={() => toggleLike(currentTrack._id)}
                             className={`text-gray-400 hover:text-white ${
@@ -244,7 +452,7 @@ const MiniPlayer = () => {
                     </div>
                 </div>
             </div>
-            {isFullscreen && <FullscreenPlayer onClose={() => setIsFullscreen(false)} />}
+            {isFullscreen && currentTrack && <FullscreenPlayer onClose={() => setIsFullscreen(false)} />}
         </>
     );
 };

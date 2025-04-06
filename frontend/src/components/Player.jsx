@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAudio } from '../context/AudioContext';
 
 const Player = () => {
@@ -16,6 +16,17 @@ const Player = () => {
     setProgress
   } = useAudio();
   const [isVolumeHovered, setIsVolumeHovered] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    audioRef.current.volume = volume;
+  }, [volume]);
+
+  useEffect(() => {
+    if (currentTrack) {
+      setProgress(0); // Reset progress when a new track starts
+    }
+  }, [currentTrack, setProgress]);
 
   if (!currentTrack) return null;
 
@@ -101,7 +112,7 @@ const Player = () => {
               value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
               className={`w-24 h-1 bg-gray-600 rounded-full appearance-none ${
-                isVolumeHovered ? 'opacity-100' : 'opacity-0'
+                isVolumeHovered ? 'opacity-100' : 'opacity-50'
               } transition-opacity`}
             />
           </div>

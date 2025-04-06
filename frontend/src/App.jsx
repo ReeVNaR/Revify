@@ -66,6 +66,7 @@ const App = () => {
         {currentTrack && <MiniPlayer />}
         <BottomNav />
       </div>
+      <MiniPlayer /> {/* Add this line */}
     </div>
   );
 };

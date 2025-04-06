@@ -41,9 +41,11 @@ const Library = () => {
         e.preventDefault();
         try {
             const playlist = await handleCreatePlaylist(playlistName.trim());
-            setPlaylistName('');
-            setShowModal(false);
-            navigate(`/playlist/${playlist._id}`);
+            if (playlist) {
+                setPlaylistName('');
+                setShowModal(false);
+                navigate(`/playlist/${playlist._id}`);
+            }
         } catch (err) {
             setError(err.message);
         }
@@ -72,36 +74,39 @@ const Library = () => {
 
             {/* Playlists Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {playlists.map(playlist => (
+                {playlists?.map(playlist => (
                     <div
                         key={playlist._id}
                         onClick={() => navigate(`/playlist/${playlist._id}`)}
                         className="bg-[#282828] p-4 rounded-lg cursor-pointer hover:bg-[#383838] transition-colors"
                     >
                         <div className="aspect-square bg-[#181818] mb-4 flex items-center justify-center">
-                            {playlist.songs && playlist.songs.length > 0 ? (
+                            {Array.isArray(playlist.songs) && playlist.songs.length > 0 ? (
                                 <div className="grid grid-cols-2 w-full h-full">
-                                    {songs
-                                        .filter(song => playlist.songs.includes(song._id))
-                                        .slice(0, 4)
-                                        .map((song) => (
-                                            <img 
-                                                key={song._id}
-                                                src={song.coverUrl} 
-                                                alt=""
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ))}
+                                    {playlist.songs.slice(0, 4).map((song) => (
+                                        <img 
+                                            key={song._id}
+                                            src={song.coverUrl} 
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ))}
+                                    {/* Fill empty spaces with placeholder if less than 4 songs */}
+                                    {[...Array(Math.max(0, 4 - playlist.songs.length))].map((_, i) => (
+                                        <div key={i} className="bg-[#282828]" />
+                                    ))}
                                 </div>
                             ) : (
-                                <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                                </svg>
+                                <div className="flex items-center justify-center w-full h-full text-gray-400">
+                                    <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                                    </svg>
+                                </div>
                             )}
                         </div>
                         <h3 className="font-bold truncate">{playlist.name}</h3>
                         <p className="text-sm text-gray-400">
-                            {playlist.songs ? playlist.songs.length : 0} songs
+                            {Array.isArray(playlist.songs) ? playlist.songs.length : 0} songs
                         </p>
                     </div>
                 ))}
