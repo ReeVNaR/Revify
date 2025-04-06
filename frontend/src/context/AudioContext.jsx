@@ -123,7 +123,7 @@ const AudioProvider = ({ children }) => {
         };
     }, [volume, handleAudioError]);
 
-    // Update play function with better error handling
+    // Update play function with better state management
     const play = useCallback(async (track) => {
         if (!track?.audioUrl) {
             setError('Invalid audio track');
@@ -134,36 +134,32 @@ const AudioProvider = ({ children }) => {
             const audio = audioRef.current;
             
             if (currentTrack?._id === track._id) {
-                if (!isPlaying) {
-                    await audio.play();
-                    setIsPlaying(true);
-                }
+                await audio.play();
+                setIsPlaying(true);
                 return;
             }
 
-            // Reset audio state before changing track
+            // Stop current playback before switching tracks
             audio.pause();
             audio.currentTime = 0;
-            setError(null);
+            setIsPlaying(false);
             
             setCurrentTrack(track);
             audio.src = track.audioUrl;
-            
-            if (!isPlaying) {
-                setIsPlaying(true);
-            }
-            
             await audio.play();
+            setIsPlaying(true);
             addToHistory(track);
         } catch (error) {
             console.error('Playback error:', error);
-            setError('Failed to play track: ' + error.message);
+            setError('Failed to play track');
             setIsPlaying(false);
         }
-    }, [currentTrack, isPlaying, addToHistory]);
+    }, [currentTrack, addToHistory]);
 
+    // Update pause function
     const pause = useCallback(() => {
-        audioRef.current.pause();
+        const audio = audioRef.current;
+        audio.pause();
         setIsPlaying(false);
     }, []);
 
@@ -519,6 +515,32 @@ const AudioProvider = ({ children }) => {
         );
         setSearchResults(results);
     }, [songs]);
+
+    // Add cleanup effect
+    useEffect(() => {
+        const audio = audioRef.current;
+
+        const cleanup = () => {
+            audio.pause();
+            audio.src = '';
+            audio.load();
+        };
+
+        return cleanup;
+    }, []);
+
+    // Handle audio ended event
+    useEffect(() => {
+        const audio = audioRef.current;
+        
+        const handleEnded = () => {
+            setIsPlaying(false);
+            playNext();
+        };
+
+        audio.addEventListener('ended', handleEnded);
+        return () => audio.removeEventListener('ended', handleEnded);
+    }, [playNext]);
 
     // Expose loading and error states
     return (
