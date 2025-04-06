@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchSongs } from '../services/api';
 import { useAudio } from '../context/AudioContext';
@@ -7,7 +7,7 @@ function Home() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { play, pause, currentTrack, isPlaying } = useAudio();
+  const { play, pause, currentTrack, isPlaying, user, playlists, recentlyPlayed } = useAudio();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +36,13 @@ function Home() {
     navigate(`/songs/${song._id}`);
   };
 
+  // Add random songs selector
+  const randomSongs = useMemo(() => {
+    if (!songs.length) return [];
+    const shuffled = [...songs].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 4);
+  }, [songs]);
+
   if (loading) return (
     <div className="flex justify-center items-center min-h-screen bg-[#121212]">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
@@ -48,50 +55,62 @@ function Home() {
 
   return (
     <div className="px-6 py-4 min-h-full">
-      <h1 className="text-2xl font-bold text-white mb-6">Welcome</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white">
+          Welcome {user?.username ? `, ${user.username}` : ''}
+        </h1>
+        <p className="text-gray-400 mt-2">
+          {user ? 'Discover your favorite music' : 'Sign in to start listening'}
+        </p>
+      </div>
       
       {/* Recently Played Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-        {songs.slice(0, 6).map((song) => (
-          <div 
-            key={song._id}
-            onClick={() => handleSongClick(song)}
-            className="bg-[#282828] hover:bg-[#2A2A2A] transition-colors group relative rounded-md overflow-hidden cursor-pointer"
-          >
-            <div className="flex items-center gap-4 p-4">
-              <img 
-                src={song.coverUrl}
-                alt={song.title}
-                className="w-12 h-12 rounded shadow"
-              />
-              <h3 className="font-bold text-white truncate">{song.title}</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayPause(song);
-                }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-green-500 rounded-full shadow-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+      {recentlyPlayed.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Recently Played</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {recentlyPlayed.map((song) => (
+              <div 
+                key={song._id}
+                onClick={() => handleSongClick(song)}
+                className="bg-[#282828] hover:bg-[#2A2A2A] transition-colors group relative rounded-md overflow-hidden cursor-pointer"
               >
-                {currentTrack?.audioUrl === song.audioUrl && isPlaying ? (
-                  <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                  </svg>
-                ) : (
-                  <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                )}
-              </button>
-            </div>
+                <div className="flex items-center gap-4 p-4">
+                  <img 
+                    src={song.coverUrl}
+                    alt={song.title}
+                    className="w-12 h-12 rounded shadow"
+                  />
+                  <h3 className="font-bold text-white truncate">{song.title}</h3>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayPause(song);
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-green-500 rounded-full shadow-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {currentTrack?.audioUrl === song.audioUrl && isPlaying ? (
+                      <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Made for you Section */}
       <section className="mb-8">
         <h2 className="text-2xl font-bold text-white mb-4">Made for you</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {songs.filter(song => song.genre === "Pop").slice(0, 5).map((song) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {randomSongs.map((song) => (
             <div 
               key={song._id}
               onClick={() => handleSongClick(song)}
@@ -108,14 +127,14 @@ function Home() {
                     e.stopPropagation();
                     handlePlayPause(song);
                   }}
-                  className="absolute bottom-2 right-2 w-12 h-12 bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl"
+                  className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl"
                 >
                   {currentTrack?.audioUrl === song.audioUrl && isPlaying ? (
-                    <svg className="w-6 h-6" fill="black" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
                       <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
                     </svg>
                   ) : (
-                    <svg className="w-6 h-6" fill="black" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"/>
                     </svg>
                   )}
@@ -128,50 +147,42 @@ function Home() {
         </div>
       </section>
 
-      {/* Recently Added Section */}
-      <section>
-        <h2 className="text-2xl font-bold text-white mb-4">Recently added</h2>
-        <div className="bg-[#181818] rounded-lg overflow-hidden">
-          {songs.map((song, index) => (
-            <div 
-              key={song._id}
-              className="flex items-center px-4 py-3 hover:bg-[#282828] group transition-all duration-300 cursor-pointer"
-              onClick={() => handleSongClick(song)}
-            >
-              <div className="w-12 text-gray-400 text-right pr-4">{index + 1}</div>
-              <div className="w-12 h-12 mr-4">
-                <img 
-                  src={song.coverUrl} 
-                  alt={`${song.title} cover`} 
-                  className="w-full h-full object-cover rounded"
-                />
-              </div>
-              <div className="flex-grow">
-                <h3 className="font-semibold text-white">{song.title}</h3>
-                <p className="text-sm text-gray-400">{song.artist}</p>
-              </div>
-              <div className="text-sm text-gray-400 mr-4">{song.genre}</div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayPause(song);
-                }}
-                className="w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+      {/* Playlists Section */}
+      {user && playlists.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Your Playlists</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {playlists.map((playlist) => (
+              <div 
+                key={playlist._id}
+                onClick={() => navigate(`/playlist/${playlist._id}`)}
+                className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group relative cursor-pointer"
               >
-                {currentTrack?.audioUrl === song.audioUrl && isPlaying ? (
-                  <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                  </svg>
-                ) : (
-                  <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+                <div className="relative mb-4 aspect-square bg-[#282828] rounded-md flex items-center justify-center">
+                  {playlist.songs?.length > 0 ? (
+                    <div className="grid grid-cols-2 w-full h-full">
+                      {playlist.songs.slice(0, 4).map((song, idx) => (
+                        <img 
+                          key={song._id}
+                          src={song.coverUrl} 
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                  )}
+                </div>
+                <h3 className="font-semibold text-white mb-1 truncate">{playlist.name}</h3>
+                <p className="text-sm text-gray-400">{playlist.songs?.length || 0} songs</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

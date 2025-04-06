@@ -11,6 +11,8 @@ const MiniPlayer = () => {
     const [duration, setDuration] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [showVolume, setShowVolume] = useState(false);
+    const [volume, setVolume] = useState(1);
     const navigate = useNavigate();
 
     const updateProgress = useCallback(() => {
@@ -52,6 +54,13 @@ const MiniPlayer = () => {
         };
     }, [repeat, playNext, updateProgress]);
 
+    useEffect(() => {
+        const savedVolume = localStorage.getItem('volume');
+        if (savedVolume) {
+            setVolume(parseFloat(savedVolume));
+        }
+    }, []);
+
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
@@ -80,6 +89,12 @@ const MiniPlayer = () => {
     const handlePreviousClick = (e) => {
         e.stopPropagation();
         playPrevious(false); // Pass false to disable navigation
+    };
+
+    const handleVolumeChange = (e) => {
+        const newVolume = parseFloat(e.target.value);
+        setVolume(newVolume);
+        localStorage.setItem('volume', newVolume);
     };
 
     if (!currentTrack) return null;
@@ -163,11 +178,34 @@ const MiniPlayer = () => {
 
                     {/* Volume Controls */}
                     <div className="flex items-center justify-end min-w-[180px] w-[30%]">
-                        <button className="text-gray-400 hover:text-white p-2">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                            </svg>
-                        </button>
+                        <div className="relative ml-4">
+                            <button
+                                onMouseEnter={() => setShowVolume(true)}
+                                onMouseLeave={() => setShowVolume(false)}
+                                className="text-gray-400 hover:text-white p-2"
+                            >
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                                </svg>
+                            </button>
+                            {showVolume && (
+                                <div
+                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-[#282828] rounded-lg shadow-lg"
+                                    onMouseEnter={() => setShowVolume(true)}
+                                    onMouseLeave={() => setShowVolume(false)}
+                                >
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.01"
+                                        value={volume}
+                                        onChange={handleVolumeChange}
+                                        className="w-24 h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
+                                    />
+                                </div>
+                            )}
+                        </div>
                         <button
                             onClick={() => toggleLike(currentTrack._id)}
                             className={`text-gray-400 hover:text-white ${

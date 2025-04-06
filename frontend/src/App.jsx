@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import SongsList from './pages/SongsList';
-import SongView from './pages/SongView';
+import LoadingSpinner from './components/LoadingSpinner';
 import BottomNav from './components/BottomNav';
 import { useAudio } from './context/AudioContext';
 import MiniPlayer from './components/MiniPlayer';
 import Header from './components/Header';
-import Search from './pages/Search';
+
+// Lazy load components
+const Home = lazy(() => import('./pages/Home'));
+const Search = lazy(() => import('./pages/Search'));
+const SongsList = lazy(() => import('./pages/SongsList'));
+const SongView = lazy(() => import('./pages/SongView'));
+const Library = lazy(() => import('./pages/Library'));
+const Profile = lazy(() => import('./pages/Profile'));
+const PlaylistView = lazy(() => import('./pages/PlaylistView'));
 
 const App = () => {
   const { currentTrack } = useAudio();
@@ -36,17 +42,22 @@ const App = () => {
                 </button>
               </div>
             ) : (
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/songs" element={<SongsList />} />
-                <Route path="/songs/:songId" element={<SongView />} />
-                <Route path="*" element={
-                  <div className="text-white text-center p-8">
-                    <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
-                  </div>
-                } />
-              </Routes>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/songs" element={<SongsList />} />
+                  <Route path="/songs/:songId" element={<SongView />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/playlist/:playlistId" element={<PlaylistView />} />
+                  <Route path="*" element={
+                    <div className="text-white text-center p-8">
+                      <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
+                    </div>
+                  } />
+                </Routes>
+              </Suspense>
             )}
           </div>
         </main>

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as mmb from 'music-metadata-browser';
 
-const API_URL = 'https://revify.onrender.com';
+const API_URL = 'http://localhost:5000';  // Update this line
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -154,29 +154,188 @@ export const uploadAudio = async (file, onProgress) => {
     }
 };
 
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const cache = new Map();
+
+const getCached = (key) => {
+  const cached = cache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp > CACHE_DURATION) {
+    cache.delete(key);
+    return null;
+  }
+  return cached.data;
+};
+
+const setCache = (key, data) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+};
+
+// Update fetchSongs with caching
 export const fetchSongs = async () => {
+  const cachedSongs = getCached('songs');
+  if (cachedSongs) return cachedSongs;
+
+  try {
+    const response = await api.get('/api/songs', { retry: true });
+    if (!response.data) throw new Error('No data received');
+    setCache('songs', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching songs:', error);
+    throw error;
+  }
+};
+
+// Update fetchSongById with caching
+export const fetchSongById = async (id) => {
     try {
-        console.log('Fetching songs from deployed server:', `${API_URL}/api/songs`);
-        const response = await api.get('/api/songs', { retry: true });
-        
+        console.log('Fetching song:', id);
+        const response = await api.get(`/api/songs/${id}`);
         if (!response.data) {
-            throw new Error('No data received from server');
+            throw new Error('No song data received');
         }
-        
         return response.data;
     } catch (error) {
-        console.error('Error fetching songs from deployed server:', error);
-        throw new Error(`Failed to fetch songs: ${error.message}`);
+        console.error('Error fetching song:', error.response?.data || error);
+        throw new Error(error.response?.data?.message || 'Failed to fetch song details');
     }
 };
 
-export const fetchSongById = async (id) => {
+export const createUser = async (userData) => {
     try {
-        const response = await api.get(`/api/songs/${id}`);
+        const response = await api.post('/api/auth/register', userData);
+        if (!response.data) throw new Error('No response data');
         return response.data;
     } catch (error) {
-        console.error('Error fetching song:', error);
+        console.error('Create user error:', error.response?.data || error);
+        if (error.response?.status === 409) {
+            throw new Error('Username already exists');
+        }
+        throw new Error('Registration failed');
+    }
+};
+
+export const loginUser = async (credentials) => {
+    try {
+        const response = await api.post('/api/auth/login', credentials);
+        if (!response.data) throw new Error('No response data');
+        return response.data;
+    } catch (error) {
+        console.error('Login error:', error.response?.data || error);
+        if (error.response?.status === 401) {
+            throw new Error('Invalid username or password');
+        }
+        throw new Error('Login failed');
+    }
+};
+
+export const getUser = async (username) => {
+    try {
+        const response = await api.get(`/api/users/${username}`);
+        if (!response.data) {
+            throw new Error('No user data received');
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Get user error:', error);
         throw error;
+    }
+};
+
+export const createPlaylist = async (username, playlistName) => {
+    try {
+        const response = await api.post(`/api/users/${username}/playlists`, { name: playlistName });
+        return response.data;
+    } catch (error) {
+        throw new Error('Failed to create playlist');
+    }
+};
+
+export const updatePlaylistName = async (username, playlistId, name) => {
+    try {
+        const response = await api.put(`/api/users/${username}/playlists/${playlistId}`, { name });
+        if (!response.data) {
+            throw new Error('No response data');
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Update playlist error:', error);
+        throw new Error(error.response?.data?.message || 'Failed to update playlist name');
+    }
+};
+
+export const deletePlaylist = async (username, playlistId) => {
+    try {
+        const response = await api.delete(`/api/users/${username}/playlists/${playlistId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to delete playlist');
+    }
+};
+
+export const addSongToPlaylist = async (username, playlistId, songId) => {
+    try {
+        const response = await api.post(`/api/users/${username}/playlists/${playlistId}/songs`, { songId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to add song to playlist');
+    }
+};
+
+export const removeSongFromPlaylist = async (username, playlistId, songId) => {
+    try {
+        const response = await api.delete(`/api/users/${username}/playlists/${playlistId}/songs/${songId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to remove song from playlist');
+    }
+};
+
+export const getPlaylists = async (username) => {
+    try {
+        const response = await api.get(`/api/users/${username}/playlists`);
+        return response.data;
+    } catch (error) {
+        console.error('Get playlists error:', error);
+        throw new Error('Failed to fetch playlists');
+    }
+};
+
+export const toggleLikeSong = async (username, songId, isLiking = true) => {
+    try {
+        const method = isLiking ? 'post' : 'delete';
+        await api[method](`/api/users/${username}/likes/${songId}`);
+        
+        // Fetch fresh user data after like update
+        const response = await api.get(`/api/users/${username}`);
+        return response.data;
+    } catch (error) {
+        console.error('Toggle like error:', error.response?.data || error);
+        throw new Error('Failed to update liked songs');
+    }
+};
+
+export const addToPlaylist = async (username, playlistId, songId) => {
+    try {
+        const response = await api.post(`/api/users/${username}/playlists/${playlistId}/songs`, { songId });
+        return response.data;
+    } catch (error) {
+        console.error('Add to playlist error:', error.response?.data || error);
+        throw new Error('Failed to add song to playlist');
+    }
+};
+
+export const getPlaylist = async (username, playlistId) => {
+    try {
+        const response = await api.get(`/api/users/${username}/playlists/${playlistId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Get playlist error:', error);
+        throw new Error('Failed to fetch playlist');
     }
 };
 

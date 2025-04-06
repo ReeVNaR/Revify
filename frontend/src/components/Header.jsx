@@ -1,18 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAudio } from '../context/AudioContext';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAudio();
+  
+  const getInitial = (name) => {
+    return name ? name.charAt(0).toUpperCase() : '?';
+  };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 0);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === '/' && searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    // Pass the search query to your search handler
+  };
 
   return (
     <header className={`fixed top-0 right-0 left-0 md:left-64 z-30 transition-colors duration-300 ${
@@ -33,25 +62,30 @@ const Header = () => {
           {location.pathname === '/search' && (
             <div className="relative">
               <input 
+                ref={searchInputRef}
                 type="search"
-                placeholder="Search songs..."
+                placeholder="Search songs... (Press '/' to focus)"
+                value={searchQuery}
+                onChange={handleSearch}
                 className="w-80 px-4 py-2 rounded-full bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/20"
               />
             </div>
           )}
         </div>
         
-        <div className="flex items-center gap-4">
-          <button className="text-white/80 hover:text-white px-4 py-2 rounded-full bg-black/40 hover:bg-black/60">
-            Upgrade
-          </button>
-          <button className="flex items-center gap-2 px-2 py-1 rounded-full bg-black/40 hover:bg-black/60">
-            <div className="w-7 h-7 rounded-full bg-[#282828] flex items-center justify-center">
-              <svg className="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-              </svg>
+        <div className="flex items-center">
+          <button 
+            onClick={handleProfileClick}
+            className="flex items-center gap-2 px-2 py-1 rounded-full bg-black/40 hover:bg-black/60 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center">
+              <span className="text-sm font-semibold text-white">
+                {user ? getInitial(user.username) : '?'}
+              </span>
             </div>
-            <span className="text-sm font-medium text-white">Profile</span>
+            <span className="text-sm font-medium text-white">
+              {user ? user.username : 'Profile'}
+            </span>
           </button>
         </div>
       </div>

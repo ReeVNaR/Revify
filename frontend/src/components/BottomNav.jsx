@@ -1,8 +1,11 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAudio } from '../context/AudioContext';
 
 const BottomNav = () => {
   const location = useLocation();
+  const { user } = useAudio();
+  const navigate = useNavigate();
 
   const navItems = [
     {
@@ -24,7 +27,7 @@ const BottomNav = () => {
       )
     },
     {
-      to: "/playlists",
+      to: "/library",
       label: "Library",
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -33,6 +36,15 @@ const BottomNav = () => {
       )
     }
   ];
+
+  const handleLibraryClick = (e) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/profile');
+      return;
+    }
+    navigate('/library');
+  };
 
   return (
     <>
@@ -68,15 +80,28 @@ const BottomNav = () => {
         </div>
         <div className="flex flex-col space-y-2">
           {navItems.map((item) => (
-            <Link 
-              key={item.to}
-              to={item.to} 
-              className={`flex items-center space-x-4 p-3 rounded-lg hover:bg-[#282828] transition-colors duration-200
-                ${location.pathname === item.to ? 'bg-[#282828] text-green-500' : 'text-gray-400'}`}
-            >
-              {item.icon}
-              <span className="text-sm font-medium">{item.label}</span>
-            </Link>
+            item.to === '/library' ? (
+              <Link 
+                key={item.to}
+                to={item.to} 
+                onClick={handleLibraryClick}
+                className={`flex items-center space-x-4 p-3 rounded-lg hover:bg-[#282828] transition-colors duration-200
+                  ${location.pathname === item.to ? 'bg-[#282828] text-green-500' : 'text-gray-400'}`}
+              >
+                {item.icon}
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            ) : (
+              <Link 
+                key={item.to}
+                to={item.to} 
+                className={`flex items-center space-x-4 p-3 rounded-lg hover:bg-[#282828] transition-colors duration-200
+                  ${location.pathname === item.to ? 'bg-[#282828] text-green-500' : 'text-gray-400'}`}
+              >
+                {item.icon}
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            )
           ))}
         </div>
       </div>
