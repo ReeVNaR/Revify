@@ -267,13 +267,54 @@ const MiniPlayer = () => {
         <>
             <div className="fixed bottom-[4rem] md:bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] px-4 backdrop-blur-lg bg-opacity-95 z-50">
                 <div className="max-w-screen-2xl mx-auto h-full flex items-center justify-between gap-4">
-                    {currentTrack ? (
-                        <>
-                            {/* Track Info */}
-                            <div 
-                                onClick={handleSongInfoClick}
-                                className="flex items-center min-w-[180px] max-w-[300px] w-[30%] cursor-pointer"
-                            >
+                    {/* Mobile View */}
+                    <div className="flex md:hidden w-full items-center justify-between">
+                        {currentTrack ? (
+                            <>
+                                <div 
+                                    onClick={handleSongInfoClick}
+                                    className="flex items-center flex-1 cursor-pointer"
+                                >
+                                    <img 
+                                        src={currentTrack.coverUrl} 
+                                        alt={currentTrack.title} 
+                                        className="w-14 h-14 rounded shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={handleCoverClick}
+                                    />
+                                    <div className="ml-4 overflow-hidden">
+                                        <h4 className="text-sm text-white font-medium truncate hover:underline cursor-pointer">
+                                            {currentTrack.title}
+                                        </h4>
+                                        <p className="text-xs text-gray-400 truncate hover:underline cursor-pointer">
+                                            {currentTrack.artist}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handlePlayPause}
+                                    className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform ml-4"
+                                >
+                                    {isPlaying ? (
+                                        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="black">
+                                            <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"/>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4 ml-0.5" viewBox="0 0 16 16" fill="black">
+                                            <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"/>
+                                        </svg>
+                                    )}
+                                </button>
+                            </>
+                        ) : (
+                            <EmptyState />
+                        )}
+                    </div>
+
+                    {/* Desktop View - Hide on mobile */}
+                    <div className="hidden md:flex w-full items-center justify-between gap-4">
+                        {/* Left Section - Track Info */}
+                        {currentTrack ? (
+                            <div className="flex items-center min-w-[180px] max-w-[300px] w-[30%]">
                                 <img 
                                     src={currentTrack.coverUrl} 
                                     alt={currentTrack.title} 
@@ -289,97 +330,87 @@ const MiniPlayer = () => {
                                     </p>
                                 </div>
                             </div>
-                        </>
-                    ) : (
-                        <EmptyState />
-                    )}
+                        ) : (
+                            <EmptyState />
+                        )}
 
-                    <div className={`flex flex-col items-center max-w-[40%] w-full ${!currentTrack ? 'opacity-50 pointer-events-none' : ''}`}>
-                        {/* Player Controls */}
-                        <div className="flex items-center gap-6 mb-2">
-                            <button onClick={handlePreviousClick} className="text-[#b3b3b3] hover:text-white transition-colors">
-                                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" />
-                                </svg>
-                            </button>
-                            <button 
-                                onClick={handlePlayPause}
-                                className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform"
-                                disabled={!currentTrack}
-                            >
-                                {isPlaying ? (
-                                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="black">
-                                        <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"/>
+                        {/* Center Section - Player Controls */}
+                        <div className="flex flex-col items-center max-w-[40%] w-full">
+                            <div className="flex items-center gap-6 mb-2">
+                                <button onClick={handlePreviousClick} className="text-[#b3b3b3] hover:text-white transition-colors">
+                                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" />
                                     </svg>
-                                ) : (
-                                    <svg className="w-4 h-4 ml-0.5" viewBox="0 0 16 16" fill="black">
-                                        <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"/>
+                                </button>
+                                <button 
+                                    onClick={handlePlayPause}
+                                    className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform"
+                                    disabled={!currentTrack}
+                                >
+                                    {isPlaying ? (
+                                        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="black">
+                                            <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"/>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4 ml-0.5" viewBox="0 0 16 16" fill="black">
+                                            <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"/>
+                                        </svg>
+                                    )}
+                                </button>
+                                <button onClick={handleNextClick} className="text-[#b3b3b3] hover:text-white transition-colors">
+                                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"/>
                                     </svg>
-                                )}
-                            </button>
-                            <button onClick={handleNextClick} className="text-[#b3b3b3] hover:text-white transition-colors">
-                                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="w-full flex items-center gap-2 text-[11px] text-gray-400">
-                            <span className="w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
-                            <div className="flex-1">
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    step="0.1"
-                                    value={progress}
-                                    onChange={handleProgressChange}
-                                    className="w-full h-1 rounded-full appearance-none cursor-pointer
-                                        bg-[#4d4d4d] 
-                                        relative
-                                        before:absolute
-                                        before:h-full
-                                        before:bg-white
-                                        before:rounded-full
-                                        hover:before:bg-green-500
-                                        group-hover:before:bg-green-500
-                                        [&::-webkit-slider-thumb]:appearance-none 
-                                        [&::-webkit-slider-thumb]:h-3
-                                        [&::-webkit-slider-thumb]:w-3
-                                        [&::-webkit-slider-thumb]:rounded-full
-                                        [&::-webkit-slider-thumb]:bg-white
-                                        [&::-webkit-slider-thumb]:invisible
-                                        hover:[&::-webkit-slider-thumb]:visible
-                                        [&::-moz-range-thumb]:h-3
-                                        [&::-moz-range-thumb]:w-3
-                                        [&::-moz-range-thumb]:rounded-full
-                                        [&::-moz-range-thumb]:bg-white
-                                        [&::-moz-range-thumb]:border-0
-                                        [&::-moz-range-thumb]:invisible
-                                        hover:[&::-moz-range-thumb]:visible
-                                        [&::-moz-range-progress]:bg-white
-                                        [&::-moz-range-progress]:rounded-full
-                                        hover:[&::-moz-range-progress]:bg-green-500
-                                        [&::-webkit-slider-runnable-track]:bg-transparent
-                                        [&::-moz-range-track]:bg-transparent"
-                                    style={{
-                                        backgroundImage: `linear-gradient(to right, white ${progress}%, #4d4d4d ${progress}%)`,
-                                    }}
-                                />
+                                </button>
                             </div>
-                            <span className="w-10 tabular-nums">{formatTime(duration || 0)}</span>
+                            {/* Progress bar */}
+                            <div className="w-full flex items-center gap-2 text-[11px] text-gray-400">
+                                <span className="w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
+                                <div className="flex-1">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        value={progress}
+                                        onChange={handleProgressChange}
+                                        className="w-full h-1 rounded-full appearance-none cursor-pointer bg-[#4d4d4d]"
+                                        style={{
+                                            backgroundImage: `linear-gradient(to right, white ${progress}%, #4d4d4d ${progress}%)`
+                                        }}
+                                    />
+                                </div>
+                                <span className="w-10 tabular-nums">{formatTime(duration || 0)}</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className={`flex items-center justify-end min-w-[180px] w-[30%] ${!currentTrack ? 'opacity-50 pointer-events-none' : ''}`}>
-                        {/* Volume Controls */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleVolumeClick}
-                                className="text-gray-400 hover:text-white p-2"
-                            >
-                                {getVolumeIcon()}
-                            </button>
-                            <div className="w-24">
+                        {/* Right Section - Volume & Additional Controls */}
+                        <div className="flex items-center justify-end gap-4 min-w-[180px] w-[30%]">
+                            {/* Additional controls (shuffle, repeat) */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={toggleShuffle}
+                                    className={`text-gray-400 hover:text-white ${shuffle ? 'text-green-500' : ''}`}
+                                >
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={toggleRepeat}
+                                    className={`text-gray-400 hover:text-white ${repeat !== 'off' ? 'text-green-500' : ''}`}
+                                >
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Volume control */}
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleVolumeClick} className="text-gray-400 hover:text-white">
+                                    {getVolumeIcon()}
+                                </button>
                                 <input
                                     type="range"
                                     min="0"
@@ -387,68 +418,13 @@ const MiniPlayer = () => {
                                     step="0.01"
                                     value={volume}
                                     onChange={handleVolumeChange}
-                                    className="w-full h-1 rounded-full appearance-none cursor-pointer
-                                        bg-[#4d4d4d] 
-                                        relative
-                                        before:absolute
-                                        before:h-full
-                                        before:bg-white
-                                        before:rounded-full
-                                        hover:before:bg-green-500
-                                        group-hover:before:bg-green-500
-                                        [&::-webkit-slider-thumb]:appearance-none 
-                                        [&::-webkit-slider-thumb]:h-3
-                                        [&::-webkit-slider-thumb]:w-3
-                                        [&::-webkit-slider-thumb]:rounded-full
-                                        [&::-webkit-slider-thumb]:bg-white
-                                        [&::-webkit-slider-thumb]:invisible
-                                        hover:[&::-webkit-slider-thumb]:visible
-                                        [&::-moz-range-thumb]:h-3
-                                        [&::-moz-range-thumb]:w-3
-                                        [&::-moz-range-thumb]:rounded-full
-                                        [&::-moz-range-thumb]:bg-white
-                                        [&::-moz-range-thumb]:border-0
-                                        [&::-moz-range-thumb]:invisible
-                                        hover:[&::-moz-range-thumb]:visible
-                                        [&::-moz-range-progress]:bg-white
-                                        [&::-moz-range-progress]:rounded-full
-                                        hover:[&::-moz-range-progress]:bg-green-500
-                                        [&::-webkit-slider-runnable-track]:bg-transparent
-                                        [&::-moz-range-track]:bg-transparent"
+                                    className="w-24 h-1 rounded-full appearance-none cursor-pointer bg-[#4d4d4d]"
                                     style={{
-                                        backgroundImage: `linear-gradient(to right, white ${volume * 100}%, #4d4d4d ${volume * 100}%)`,
+                                        backgroundImage: `linear-gradient(to right, white ${volume * 100}%, #4d4d4d ${volume * 100}%)`
                                     }}
                                 />
                             </div>
                         </div>
-                        
-                        {/* Other controls (like, shuffle, repeat) */}
-                        <button
-                            onClick={() => toggleLike(currentTrack._id)}
-                            className={`text-gray-400 hover:text-white ${
-                                liked.has(currentTrack._id) ? 'text-green-500' : ''
-                            }`}
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                            </svg>
-                        </button>
-                        <button
-                            onClick={toggleShuffle}
-                            className={`text-gray-400 hover:text-white ${shuffle ? 'text-green-500' : ''}`}
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
-                            </svg>
-                        </button>
-                        <button
-                            onClick={toggleRepeat}
-                            className={`text-gray-400 hover:text-white ${repeat !== 'off' ? 'text-green-500' : ''}`}
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </div>

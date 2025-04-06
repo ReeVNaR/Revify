@@ -95,15 +95,15 @@ const PlaylistView = () => {
     };
 
     return (
-        <div className="p-6 text-white">
+        <div className="p-4 md:p-6 text-white">
             {error && (
                 <div className="bg-red-500/10 text-red-500 p-4 rounded-lg mb-4">
                     {error}
                 </div>
             )}
-            <div className="bg-gradient-to-b from-[#535353] to-[#121212] rounded-lg p-8 mb-8">
-                <div className="flex items-center gap-6">
-                    <div className="w-48 h-48 bg-[#282828] rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="bg-gradient-to-b from-[#535353] to-[#121212] rounded-lg p-4 md:p-8 mb-8">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+                    <div className="w-32 h-32 md:w-48 md:h-48 bg-[#282828] rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {playlistSongs.length > 0 ? (
                             playlistSongs.length === 1 ? (
                                 <img 
@@ -124,41 +124,47 @@ const PlaylistView = () => {
                                 </div>
                             )
                         ) : (
-                            <svg className="w-24 h-24 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-16 h-16 md:w-24 md:h-24 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
                             </svg>
                         )}
                     </div>
                     <div className="flex-grow">
                         {isEditing ? (
-                            <form onSubmit={handleNameUpdate}>
+                            <form onSubmit={handleNameUpdate} className="w-full">
                                 <input
                                     type="text"
                                     value={newName}
                                     onChange={(e) => setNewName(e.target.value)}
-                                    className="bg-[#282828] px-4 py-2 rounded-md"
+                                    className="w-full bg-[#282828] px-4 py-2 rounded-md"
                                     placeholder="Playlist name"
                                     autoFocus
                                 />
                                 <div className="flex gap-2 mt-2">
                                     <button 
                                         type="submit" 
-                                        className="px-4 py-2 bg-green-500 rounded-full disabled:opacity-50"
+                                        className="px-4 py-2 bg-green-500 rounded-full text-sm md:text-base disabled:opacity-50"
                                         disabled={isLoading}
                                     >
                                         {isLoading ? 'Saving...' : 'Save'}
                                     </button>
-                                    <button type="button" onClick={() => { setIsEditing(false); setError(''); }} className="px-4 py-2 bg-[#282828] rounded-full">Cancel</button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { setIsEditing(false); setError(''); }} 
+                                        className="px-4 py-2 bg-[#282828] rounded-full text-sm md:text-base"
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </form>
                         ) : (
                             <>
-                                <h1 className="text-4xl font-bold">{playlist.name}</h1>
-                                <p className="text-gray-400 mt-2">{playlistSongs.length} songs</p>
-                                <div className="flex gap-4 mt-4">
-                                    <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-white/10 rounded-full">Edit Name</button>
-                                    <button onClick={() => setShowAddSongs(true)} className="px-4 py-2 bg-green-500 rounded-full">Add Songs</button>
-                                    <button onClick={handleDelete} className="px-4 py-2 bg-red-500 rounded-full">Delete Playlist</button>
+                                <h1 className="text-2xl md:text-4xl font-bold break-words">{playlist.name}</h1>
+                                <p className="text-gray-400 mt-1 md:mt-2 text-sm md:text-base">{playlistSongs.length} songs</p>
+                                <div className="flex flex-wrap gap-2 md:gap-4 mt-3 md:mt-4">
+                                    <button onClick={() => setIsEditing(true)} className="px-3 py-1.5 md:px-4 md:py-2 bg-white/10 rounded-full text-sm md:text-base">Edit Name</button>
+                                    <button onClick={() => setShowAddSongs(true)} className="px-3 py-1.5 md:px-4 md:py-2 bg-green-500 rounded-full text-sm md:text-base">Add Songs</button>
+                                    <button onClick={handleDelete} className="px-3 py-1.5 md:px-4 md:py-2 bg-red-500 rounded-full text-sm md:text-base">Delete Playlist</button>
                                 </div>
                             </>
                         )}
@@ -169,32 +175,32 @@ const PlaylistView = () => {
             {/* Songs List */}
             <div className="bg-[#181818] rounded-lg">
                 {playlistSongs.map(song => (
-                    <div key={song._id} className="flex items-center px-4 py-3 hover:bg-[#282828] group relative">
-                        <img src={song.coverUrl} alt={song.title} className="w-12 h-12 rounded mr-4"/>
-                        <div className="flex-grow">
-                            <p className="font-medium">{song.title}</p>
-                            <p className="text-sm text-gray-400">{song.artist}</p>
+                    <div key={song._id} className="flex items-center px-3 md:px-4 py-2 md:py-3 hover:bg-[#282828] group relative">
+                        <img src={song.coverUrl} alt={song.title} className="w-10 h-10 md:w-12 md:h-12 rounded mr-3 md:mr-4"/>
+                        <div className="flex-grow min-w-0">
+                            <p className="font-medium text-sm md:text-base truncate">{song.title}</p>
+                            <p className="text-xs md:text-sm text-gray-400 truncate">{song.artist}</p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 md:gap-3">
                             <button
                                 onClick={() => currentTrack?._id === song._id && isPlaying ? pause() : play(song)}
-                                className="opacity-0 group-hover:opacity-100"
+                                className="opacity-100 md:opacity-0 md:group-hover:opacity-100"
                             >
                                 {currentTrack?._id === song._id && isPlaying ? (
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
                                     </svg>
                                 ) : (
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
                                     </svg>
                                 )}
                             </button>
                             <button
                                 onClick={(e) => handleSongMenu(e, song._id)}
-                                className="p-2 hover:bg-[#383838] rounded-full text-gray-400 hover:text-white transition-colors"
+                                className="p-1.5 md:p-2 hover:bg-[#383838] rounded-full text-gray-400 hover:text-white transition-colors"
                             >
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                                 </svg>
                             </button>
@@ -232,20 +238,20 @@ const PlaylistView = () => {
 
             {/* Add Songs Modal */}
             {showAddSongs && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="bg-[#282828] p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
-                        <h3 className="text-xl font-bold mb-4">Add Songs</h3>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-[#282828] p-4 md:p-6 rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
+                        <h3 className="text-lg md:text-xl font-bold mb-4">Add Songs</h3>
                         <div className="space-y-2">
                             {availableSongs.map(song => (
-                                <div key={song._id} className="flex items-center gap-4 p-2 hover:bg-[#383838] rounded-lg">
+                                <div key={song._id} className="flex items-center gap-3 p-2 hover:bg-[#383838] rounded-lg">
                                     <img src={song.coverUrl} alt={song.title} className="w-10 h-10 rounded"/>
-                                    <div className="flex-grow">
-                                        <p className="font-medium">{song.title}</p>
-                                        <p className="text-sm text-gray-400">{song.artist}</p>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="font-medium text-sm md:text-base truncate">{song.title}</p>
+                                        <p className="text-xs md:text-sm text-gray-400 truncate">{song.artist}</p>
                                     </div>
                                     <button
                                         onClick={() => handleAddSong(song._id)}
-                                        className="p-2 bg-green-500 rounded-full"
+                                        className="p-2 bg-green-500 rounded-full flex-shrink-0"
                                     >
                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -256,7 +262,7 @@ const PlaylistView = () => {
                         </div>
                         <button
                             onClick={() => setShowAddSongs(false)}
-                            className="w-full mt-4 py-2 bg-white/10 rounded-full"
+                            className="w-full mt-4 py-2 bg-white/10 rounded-full text-sm md:text-base"
                         >
                             Close
                         </button>

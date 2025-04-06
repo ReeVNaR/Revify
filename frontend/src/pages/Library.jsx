@@ -73,9 +73,8 @@ const Library = () => {
             </div>
 
             {/* Playlists Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-6 gap-3 md:gap-4 gap-y-6 md:gap-y-8 mb-8">
                 {playlists?.map(playlist => {
-                    // Ensure we get populated song data
                     const songList = playlist.songs?.filter(song => song && song.coverUrl) || [];
                     const coverImage = songList[0]?.coverUrl;
                     
@@ -83,19 +82,20 @@ const Library = () => {
                         <div
                             key={playlist._id}
                             onClick={() => navigate(`/playlist/${playlist._id}`)}
-                            className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group cursor-pointer"
+                            className="bg-[#181818] p-3 sm:p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group cursor-pointer"
                         >
-                            <div className="relative mb-4">
+                            <div className="relative mb-3 sm:mb-4">
                                 <div className="aspect-square bg-[#282828] rounded-md shadow-lg overflow-hidden">
                                     {coverImage ? (
                                         <img 
                                             src={coverImage}
                                             alt={playlist.name}
                                             className="w-full h-full object-cover"
+                                            loading="lazy"
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-full">
-                                            <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-8 sm:w-12 h-8 sm:h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
                                             </svg>
                                         </div>
@@ -108,16 +108,16 @@ const Library = () => {
                                             currentTrack?._id === songList[0]._id && isPlaying ? pause() : play(songList[0]);
                                         }
                                     }}
-                                    className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 rounded-full shadow-xl flex items-center justify-center opacity-0 translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300"
+                                    className="absolute bottom-2 right-2 w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full shadow-xl flex items-center justify-center opacity-0 translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300"
                                 >
-                                    <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="white" viewBox="0 0 24 24">
                                         <path d={currentTrack?._id === songList[0]?._id && isPlaying ? "M6 4h4v16H6V4zm8 0h4v16h-4V4z" : "M8 5v14l11-7z"}/>
                                     </svg>
                                 </button>
                             </div>
-                            <h3 className="font-bold text-white mb-1 truncate">{playlist.name}</h3>
-                            <p className="text-sm text-gray-500 truncate">By {user.username}</p>
-                            <p className="text-sm text-gray-400">{songList.length} songs</p>
+                            <h3 className="font-bold text-white text-sm sm:text-base mb-1 truncate">{playlist.name}</h3>
+                            <p className="text-xs sm:text-sm text-gray-500 truncate">By {user.username}</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{songList.length} songs</p>
                         </div>
                     );
                 })}
