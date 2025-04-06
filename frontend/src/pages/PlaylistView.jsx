@@ -103,10 +103,31 @@ const PlaylistView = () => {
             )}
             <div className="bg-gradient-to-b from-[#535353] to-[#121212] rounded-lg p-8 mb-8">
                 <div className="flex items-center gap-6">
-                    <div className="w-48 h-48 bg-[#282828] rounded-lg flex items-center justify-center">
-                        <svg className="w-24 h-24 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                        </svg>
+                    <div className="w-48 h-48 bg-[#282828] rounded-lg flex items-center justify-center overflow-hidden">
+                        {playlistSongs.length > 0 ? (
+                            playlistSongs.length === 1 ? (
+                                <img 
+                                    src={playlistSongs[0].coverUrl} 
+                                    alt="Cover" 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="grid grid-cols-2 w-full h-full">
+                                    {playlistSongs.slice(0, 4).map((song, idx) => (
+                                        <img 
+                                            key={`${song._id}-${idx}`}
+                                            src={song.coverUrl} 
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ))}
+                                </div>
+                            )
+                        ) : (
+                            <svg className="w-24 h-24 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                            </svg>
+                        )}
                     </div>
                     <div className="flex-grow">
                         {isEditing ? (

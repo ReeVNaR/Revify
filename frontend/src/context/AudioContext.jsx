@@ -425,32 +425,30 @@ const AudioProvider = ({ children }) => {
     // Update loadUserData with better playlist handling
     useEffect(() => {
         const loadUserData = async () => {
-            if (!user?.username || songs.length === 0) {
-                setIsLoading(false);
-                return;
-            }
+            if (!user?.username || songs.length === 0) return;
 
             try {
                 setIsPlaylistLoading(true);
                 const userData = await getUser(user.username);
                 
-                // Map playlists with full song objects
+                // Map playlists with full song objects including all song properties
                 const updatedPlaylists = userData.playlists.map(playlist => {
                     const playlistSongIds = playlist.songs || [];
                     const fullSongs = playlistSongIds
-                        .map(songId => songs.find(s => s._id === songId))
+                        .map(songId => {
+                            const song = songs.find(s => s._id === songId);
+                            return song ? { ...song } : null;
+                        })
                         .filter(Boolean);
-                        
+
                     return {
                         ...playlist,
                         songs: fullSongs
                     };
                 });
 
-                console.log('Updated playlists:', updatedPlaylists); // Debug log
                 setPlaylists(updatedPlaylists);
                 setUser(userData);
-                setLiked(new Set(userData.likedSongs?.map(song => song._id) || []));
             } catch (error) {
                 console.error('Failed to load user data:', error);
             } finally {
