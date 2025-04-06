@@ -1,72 +1,46 @@
 import axios from 'axios';
 import * as mmb from 'music-metadata-browser';
 
-const LOCAL_URL = 'http://localhost:5000';
-const PROD_URL = 'https://revify.onrender.com';
+const URLS = ['http://localhost:5000', 'https://revify.onrender.com'];
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? LOCAL_URL : PROD_URL;
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
-
-const api = axios.create({
-    baseURL: API_BASE_URL,
+const createApiInstance = (baseURL) => axios.create({
+    baseURL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    timeout: 30000, // Increased timeout for deployed server
+    timeout: 30000,
     withCredentials: false
 });
 
-// Add request interceptor
-api.interceptors.response.use(
-    response => response,
-    async error => {
-        const { config } = error;
-        
-        if (!config || !config.retry) {
-            return Promise.reject(error);
-        }
+const apis = URLS.map(createApiInstance);
 
-        config.retryCount = config.retryCount ?? 0;
+const makeRequest = async (method, url, data = null, config = {}) => {
+    const errors = [];
+    
+    const requests = apis.map(api => 
+        api[method](url, data, config)
+            .catch(error => {
+                errors.push(error);
+                return Promise.reject(error);
+            })
+    );
 
-        if (config.retryCount >= MAX_RETRIES) {
-            // Dispatch a custom event that App.jsx can listen to
-            window.dispatchEvent(new CustomEvent('api-error', { 
-                detail: { message: 'Connection failed after multiple retries' }
-            }));
-            return Promise.reject(error);
-        }
-
-        config.retryCount += 1;
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        
-        return api(config);
+    try {
+        const response = await Promise.any(requests);
+        return response;
+    } catch (error) {
+        console.error('All requests failed:', errors);
+        throw errors[0];
     }
-);
+};
 
-// Add retry configuration to requests
-const withRetry = config => ({ ...config, retry: true });
-
-// Add request interceptor for retries
-api.interceptors.request.use(
-    config => {
-        console.log(`Making ${config.method.toUpperCase()} request to ${API_BASE_URL}${config.url}`);
-        return config;
-    },
-    error => {
-        console.error('Request error:', error);
-        return Promise.reject(error);
-    }
-);
-
+// Replace existing api calls with new makeRequest function
 export const checkAPIStatus = async () => {
     try {
-        const response = await api.get('/', withRetry());
+        const response = await makeRequest('get', '/');
         return response.data;
     } catch (error) {
-        console.error('API Status Check Error:', error.message);
         throw new Error('Unable to connect to server');
     }
 };
@@ -109,7 +83,7 @@ export const uploadImage = async (file) => {
     try {
         if (!file) throw new Error('No file selected');
         const compressedImage = await compressImage(file);
-        const response = await api.post('/api/upload', {
+        const response = await makeRequest('post', '/api/upload', {
             data: compressedImage
         });
         if (!response.data || !response.data.url) {
@@ -136,7 +110,7 @@ export const uploadAudio = async (file, onProgress) => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.post('/api/upload', formData, {
+        const response = await makeRequest('post', '/api/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             onUploadProgress: e => {
                 const progress = Math.round((e.loaded * 100) / e.total);
@@ -183,7 +157,7 @@ export const fetchSongs = async () => {
   if (cachedSongs) return cachedSongs;
 
   try {
-    const response = await api.get('/api/songs', { retry: true });
+    const response = await makeRequest('get', '/api/songs');
     if (!response.data) throw new Error('No data received');
     setCache('songs', response.data);
     return response.data;
@@ -197,7 +171,7 @@ export const fetchSongs = async () => {
 export const fetchSongById = async (id) => {
     try {
         console.log('Fetching song:', id);
-        const response = await api.get(`/api/songs/${id}`);
+        const response = await makeRequest('get', `/api/songs/${id}`);
         if (!response.data) {
             throw new Error('No song data received');
         }
@@ -210,7 +184,7 @@ export const fetchSongById = async (id) => {
 
 export const createUser = async (userData) => {
     try {
-        const response = await api.post('/api/auth/register', userData);
+        const response = await makeRequest('post', '/api/auth/register', userData);
         if (!response.data) throw new Error('No response data');
         return response.data;
     } catch (error) {
@@ -224,7 +198,7 @@ export const createUser = async (userData) => {
 
 export const loginUser = async (credentials) => {
     try {
-        const response = await api.post('/api/auth/login', credentials);
+        const response = await makeRequest('post', '/api/auth/login', credentials);
         if (!response.data) throw new Error('No response data');
         return response.data;
     } catch (error) {
@@ -238,7 +212,7 @@ export const loginUser = async (credentials) => {
 
 export const getUser = async (username) => {
     try {
-        const response = await api.get(`/api/users/${username}`);
+        const response = await makeRequest('get', `/api/users/${username}`);
         if (!response.data) {
             throw new Error('No user data received');
         }
@@ -251,7 +225,7 @@ export const getUser = async (username) => {
 
 export const createPlaylist = async (username, playlistName) => {
     try {
-        const response = await api.post(`/api/users/${username}/playlists`, { name: playlistName });
+        const response = await makeRequest('post', `/api/users/${username}/playlists`, { name: playlistName });
         return response.data;
     } catch (error) {
         throw new Error('Failed to create playlist');
@@ -260,7 +234,7 @@ export const createPlaylist = async (username, playlistName) => {
 
 export const updatePlaylistName = async (username, playlistId, name) => {
     try {
-        const response = await api.put(`/api/users/${username}/playlists/${playlistId}`, { name });
+        const response = await makeRequest('put', `/api/users/${username}/playlists/${playlistId}`, { name });
         if (!response.data) {
             throw new Error('No response data');
         }
@@ -273,7 +247,7 @@ export const updatePlaylistName = async (username, playlistId, name) => {
 
 export const deletePlaylist = async (username, playlistId) => {
     try {
-        const response = await api.delete(`/api/users/${username}/playlists/${playlistId}`);
+        const response = await makeRequest('delete', `/api/users/${username}/playlists/${playlistId}`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to delete playlist');
@@ -282,7 +256,7 @@ export const deletePlaylist = async (username, playlistId) => {
 
 export const addSongToPlaylist = async (username, playlistId, songId) => {
     try {
-        const response = await api.post(`/api/users/${username}/playlists/${playlistId}/songs`, { songId });
+        const response = await makeRequest('post', `/api/users/${username}/playlists/${playlistId}/songs`, { songId });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to add song to playlist');
@@ -291,7 +265,7 @@ export const addSongToPlaylist = async (username, playlistId, songId) => {
 
 export const removeSongFromPlaylist = async (username, playlistId, songId) => {
     try {
-        const response = await api.delete(`/api/users/${username}/playlists/${playlistId}/songs/${songId}`);
+        const response = await makeRequest('delete', `/api/users/${username}/playlists/${playlistId}/songs/${songId}`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to remove song from playlist');
@@ -300,7 +274,7 @@ export const removeSongFromPlaylist = async (username, playlistId, songId) => {
 
 export const getPlaylists = async (username) => {
     try {
-        const response = await api.get(`/api/users/${username}/playlists`);
+        const response = await makeRequest('get', `/api/users/${username}/playlists`);
         return response.data;
     } catch (error) {
         console.error('Get playlists error:', error);
@@ -311,10 +285,10 @@ export const getPlaylists = async (username) => {
 export const toggleLikeSong = async (username, songId, isLiking = true) => {
     try {
         const method = isLiking ? 'post' : 'delete';
-        await api[method](`/api/users/${username}/likes/${songId}`);
+        await makeRequest(method, `/api/users/${username}/likes/${songId}`);
         
         // Fetch fresh user data after like update
-        const response = await api.get(`/api/users/${username}`);
+        const response = await makeRequest('get', `/api/users/${username}`);
         return response.data;
     } catch (error) {
         console.error('Toggle like error:', error.response?.data || error);
@@ -324,7 +298,7 @@ export const toggleLikeSong = async (username, songId, isLiking = true) => {
 
 export const addToPlaylist = async (username, playlistId, songId) => {
     try {
-        const response = await api.post(`/api/users/${username}/playlists/${playlistId}/songs`, { songId });
+        const response = await makeRequest('post', `/api/users/${username}/playlists/${playlistId}/songs`, { songId });
         return response.data;
     } catch (error) {
         console.error('Add to playlist error:', error.response?.data || error);
@@ -334,7 +308,7 @@ export const addToPlaylist = async (username, playlistId, songId) => {
 
 export const getPlaylist = async (username, playlistId) => {
     try {
-        const response = await api.get(`/api/users/${username}/playlists/${playlistId}`);
+        const response = await makeRequest('get', `/api/users/${username}/playlists/${playlistId}`);
         return response.data;
     } catch (error) {
         console.error('Get playlist error:', error);
@@ -342,4 +316,4 @@ export const getPlaylist = async (username, playlistId) => {
     }
 };
 
-export default api;
+export default apis;
