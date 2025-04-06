@@ -29,6 +29,8 @@ const MiniPlayer = () => {
         const savedVolume = localStorage.getItem('volume');
         return savedVolume ? parseFloat(savedVolume) : 1;
     });
+    const [touchStart, setTouchStart] = useState(null);
+    const [swipeDirection, setSwipeDirection] = useState(null);
     const navigate = useNavigate();
 
     const updateProgress = useCallback(() => {
@@ -263,17 +265,57 @@ const MiniPlayer = () => {
         localStorage.setItem('volume', newVolume.toString());
     }, [volume]);
 
+    const handleTouchStart = (e) => {
+        setTouchStart({
+            x: e.touches[0].clientX,
+            time: Date.now()
+        });
+    };
+
+    const handleTouchEnd = (e) => {
+        if (!touchStart || !currentTrack) return;
+
+        const touchEnd = e.changedTouches[0].clientX;
+        const distance = touchEnd - touchStart.x;
+        const time = Date.now() - touchStart.time;
+        
+        // Only trigger if swipe is fast enough and long enough
+        if (Math.abs(distance) > 50 && time < 300) {
+            if (distance > 0) {
+                setSwipeDirection('right');
+                playPrevious(false);
+            } else {
+                setSwipeDirection('left');
+                playNext(false);
+            }
+
+            // Reset swipe direction after animation
+            setTimeout(() => setSwipeDirection(null), 200);
+        }
+        setTouchStart(null);
+    };
+
     return (
         <>
             <div className="fixed bottom-[4rem] md:bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] px-4 backdrop-blur-lg bg-opacity-95 z-50">
                 <div className="max-w-screen-2xl mx-auto h-full flex items-center justify-between gap-4">
                     {/* Mobile View */}
-                    <div className="flex md:hidden w-full items-center justify-between">
+                    <div 
+                        className="flex md:hidden w-full items-center justify-between"
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         {currentTrack ? (
                             <>
                                 <div 
                                     onClick={handleSongInfoClick}
-                                    className="flex items-center flex-1 cursor-pointer"
+                                    className={`flex items-center flex-1 cursor-pointer transition-transform duration-200 ${
+                                        swipeDirection === 'left' 
+                                            ? '-translate-x-full' 
+                                            : swipeDirection === 'right' 
+                                                ? 'translate-x-full' 
+                                                : ''
+                                    }`}
                                 >
                                     <img 
                                         src={currentTrack.coverUrl} 

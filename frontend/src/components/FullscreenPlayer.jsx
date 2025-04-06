@@ -8,6 +8,8 @@ const FullscreenPlayer = ({ onClose }) => {
     const [progress, setProgress] = useState(0);
     const [touchStart, setTouchStart] = useState(null);
     const [touchMove, setTouchMove] = useState(null);
+    const [isClosing, setIsClosing] = useState(false);
+    const [swipeOffset, setSwipeOffset] = useState(0);
 
     useEffect(() => {
         if (duration) {
@@ -56,8 +58,11 @@ const FullscreenPlayer = ({ onClose }) => {
     };
 
     const handleTouchMove = (e) => {
-        e.preventDefault();
-        handleProgressChange(e);
+        if (!touchStart) return;
+        const currentY = e.touches[0].clientY;
+        const offset = Math.max(0, currentY - touchStart);
+        setTouchMove(currentY);
+        setSwipeOffset(offset);
     };
 
     const handleTouchStart = (e) => {
@@ -75,7 +80,12 @@ const FullscreenPlayer = ({ onClose }) => {
         const minSwipeDistance = 100;
 
         if (swipeDistance > minSwipeDistance) {
-            onClose();
+            setIsClosing(true);
+            setTimeout(() => {
+                onClose();
+            }, 300); // Match the transition duration
+        } else {
+            setSwipeOffset(0);
         }
 
         setTouchStart(null);
@@ -86,11 +96,16 @@ const FullscreenPlayer = ({ onClose }) => {
 
     return (
         <div 
-            className="fixed inset-0 bg-gradient-to-b from-[#535353] via-[#222222] to-[#121212] z-[60] text-white overflow-hidden"
+            className={`fixed inset-0 bg-gradient-to-b from-[#535353] via-[#222222] to-[#121212] z-[60] text-white overflow-hidden transition-all duration-300`}
+            style={{
+                transform: `translateY(${swipeOffset}px)`,
+                opacity: Math.max(0, 1 - (swipeOffset / window.innerHeight)),
+            }}
             onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMoveGesture}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/20 rounded-full" />
             {touchMove && touchStart && (
                 <div 
                     className="absolute inset-x-0 top-0 h-1 bg-white/20 rounded-full transition-transform"

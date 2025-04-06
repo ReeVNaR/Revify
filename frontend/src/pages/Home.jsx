@@ -68,7 +68,7 @@ function Home() {
       {recentlyPlayed.length > 0 && (
         <section className="mb-8">
           <h2 className="text-2xl font-bold text-white mb-4">Recently Played</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             {recentlyPlayed.slice(0, 8).map((song) => (
               <div 
                 key={song._id}
