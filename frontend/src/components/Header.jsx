@@ -29,11 +29,16 @@ const Header = () => {
     }`}>
       <div className="flex items-center justify-between md:justify-end px-6 py-4">
         <div className="md:hidden">
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66A2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
-            </svg>
-            Revify
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            <img 
+              src="/R.svg" 
+              alt="Revify" 
+              className="w-7 h-7 text-green-500 filter brightness-0"
+              style={{ filter: 'brightness(0) saturate(100%) invert(62%) sepia(93%) saturate(398%) hue-rotate(93deg) brightness(119%) contrast(87%)' }}
+            />
+            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Revify
+            </span>
           </h1>
         </div>
         

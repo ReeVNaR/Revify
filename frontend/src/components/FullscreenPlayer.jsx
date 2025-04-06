@@ -6,6 +6,8 @@ const FullscreenPlayer = ({ onClose }) => {
     const { currentTrack, isPlaying, play, pause, audioRef, toggleRepeat, toggleShuffle, repeat, shuffle, liked, toggleLike, currentTime, duration } = useAudio();
     const { playNext, playPrevious } = useAudioNavigation();
     const [progress, setProgress] = useState(0);
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchMove, setTouchMove] = useState(null);
 
     useEffect(() => {
         if (duration) {
@@ -58,10 +60,48 @@ const FullscreenPlayer = ({ onClose }) => {
         handleProgressChange(e);
     };
 
+    const handleTouchStart = (e) => {
+        setTouchStart(e.touches[0].clientY);
+    };
+
+    const handleTouchMoveGesture = (e) => {
+        setTouchMove(e.touches[0].clientY);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchMove) return;
+        
+        const swipeDistance = touchMove - touchStart;
+        const minSwipeDistance = 100;
+
+        if (swipeDistance > minSwipeDistance) {
+            onClose();
+        }
+
+        setTouchStart(null);
+        setTouchMove(null);
+    };
+
     if (!currentTrack) return null;
 
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-[#535353] via-[#222222] to-[#121212] z-[60] text-white overflow-hidden">
+        <div 
+            className="fixed inset-0 bg-gradient-to-b from-[#535353] via-[#222222] to-[#121212] z-[60] text-white overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMoveGesture}
+            onTouchEnd={handleTouchEnd}
+        >
+            {touchMove && touchStart && (
+                <div 
+                    className="absolute inset-x-0 top-0 h-1 bg-white/20 rounded-full transition-transform"
+                    style={{
+                        transform: `scaleY(${Math.min(
+                            (touchMove - touchStart) / 100,
+                            4
+                        )})`
+                    }}
+                />
+            )}
             <div className="absolute inset-0">
                 <div 
                     className="absolute inset-0 opacity-30"
