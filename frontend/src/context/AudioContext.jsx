@@ -211,25 +211,64 @@ const AudioProvider = ({ children }) => {
             return;
         }
 
-        // Then check shuffled queue
-        if (shuffle && shuffledQueue.length > 0) {
-            const nextSong = shuffledQueue[0];
-            setShuffledQueue(prev => prev.slice(1));
-            play(nextSong);
+        // Check if we're playing from a playlist
+        if (currentPlaylist) {
+            const currentIndex = currentPlaylist.songs.findIndex(song => song._id === currentTrack._id);
+            
+            // Handle last song in playlist
+            if (currentIndex === currentPlaylist.songs.length - 1) {
+                if (repeat === 'all') {
+                    play(currentPlaylist.songs[0]); // Loop back to first song
+                }
+                return; // Stop if no repeat and at end of playlist
+            }
+
+            // Play next song in playlist
+            play(currentPlaylist.songs[currentIndex + 1]);
             return;
         }
 
-        // Handle repeat mode
-        if (repeat === 'one') {
-            play(currentTrack);
-            return;
-        }
+        // Always play random when not in playlist
+        const availableSongs = songs.filter(song => song._id !== currentTrack._id);
+        const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
+        play(randomSong);
+    }, [currentTrack, songs, queue, play, repeat, currentPlaylist]);
 
-        // Normal sequential play
-        const currentIndex = songs.findIndex(song => song._id === currentTrack._id);
-        const nextIndex = (currentIndex + 1) % songs.length;
-        play(songs[nextIndex]);
-    }, [currentTrack, songs, queue, shuffle, shuffledQueue, play, repeat]);
+    const playPrevious = useCallback(() => {
+        if (!currentTrack || songs.length === 0) return;
+        
+        // Check if we're playing from a playlist
+        if (currentPlaylist) {
+            const currentIndex = currentPlaylist.songs.findIndex(song => song._id === currentTrack._id);
+            
+            // If shuffle is on, play random song from playlist
+            if (shuffle) {
+                const availableSongs = currentPlaylist.songs.filter(song => song._id !== currentTrack._id);
+                if (availableSongs.length > 0) {
+                    const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
+                    play(randomSong);
+                }
+                return;
+            }
+
+            // Handle first song in playlist
+            if (currentIndex === 0) {
+                if (repeat === 'all') {
+                    play(currentPlaylist.songs[currentPlaylist.songs.length - 1]); // Loop to last song
+                }
+                return;
+            }
+
+            // Play previous song in playlist
+            play(currentPlaylist.songs[currentIndex - 1]);
+            return;
+        } else {
+            // Handle non-playlist playback - always random for consistency
+            const availableSongs = songs.filter(song => song._id !== currentTrack._id);
+            const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
+            play(randomSong);
+        }
+    }, [currentTrack, songs, shuffle, play, repeat, currentPlaylist]);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -265,24 +304,6 @@ const AudioProvider = ({ children }) => {
         };
         loadSongs();
     }, []);
-
-    const playPrevious = useCallback(() => {
-        if (!currentTrack || songs.length === 0) return;
-        
-        const currentIndex = songs.findIndex(song => song._id === currentTrack._id);
-        
-        // Handle shuffle mode
-        if (shuffle) {
-            const availableSongs = songs.filter(song => song._id !== currentTrack._id);
-            const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
-            play(randomSong);
-            return;
-        }
-
-        // Normal sequential play
-        const previousIndex = currentIndex === 0 ? songs.length - 1 : currentIndex - 1;
-        play(songs[previousIndex]);
-    }, [currentTrack, songs, shuffle, play]);
 
     const toggleLike = async (songId) => {
         if (!user) return;
