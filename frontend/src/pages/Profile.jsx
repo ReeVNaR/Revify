@@ -45,13 +45,13 @@ const Profile = () => {
 
     if (!user) {
         return (
-            <div className="p-6 text-white">
-                <div className="max-w-2xl mx-auto bg-[#282828] rounded-lg p-8">
-                    <h1 className="text-2xl font-bold mb-6">
+            <div className="p-4 md:p-6 text-white">
+                <div className="max-w-2xl mx-auto bg-[#282828] rounded-lg p-4 md:p-8">
+                    <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">
                         {isLogin ? 'Login to Your Account' : 'Create Account'}
                     </h1>
                     
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                         <div>
                             <label className="block text-sm font-medium mb-2">Username</label>
                             <input
@@ -109,63 +109,68 @@ const Profile = () => {
     }
 
     return (
-        <div className="p-6 text-white">
-            <div className="bg-gradient-to-b from-[#535353] to-[#121212] rounded-lg p-8 mb-8">
-                <div className="flex items-center gap-6 mb-6">
-                    <div className="w-48 h-48 rounded-full bg-green-500 flex items-center justify-center">
-                        <span className="text-6xl font-bold text-white">
+        <div className="min-h-screen bg-[#121212] text-white">
+            <div className="bg-gradient-to-b from-[#404040] to-[#121212] px-4 md:px-6 pt-16 pb-8">
+                <div className="flex flex-col md:flex-row items-center md:items-end gap-6 max-w-7xl mx-auto">
+                    <div className="w-44 h-44 md:w-52 md:h-52 rounded-full shadow-2xl bg-[#282828] flex items-center justify-center">
+                        <span className="text-6xl md:text-7xl font-bold text-white">
                             {getInitial(user.username)}
                         </span>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold uppercase tracking-wider text-gray-300">Profile</p>
-                        <h1 className="text-6xl font-bold mt-2">{user.username}</h1>
-                        <p className="mt-4 text-gray-300">{liked.size} Liked Songs</p>
-                        <div className="flex gap-4 mt-4">
-                            <button
-                                onClick={handleEdit}
-                                className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                            >
-                                Edit Username
-                            </button>
-                            <button
-                                onClick={logout}
-                                className="px-6 py-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
-                            >
-                                Logout
-                            </button>
+                    <div className="flex-1 text-center md:text-left">
+                        <p className="text-sm font-bold uppercase">Profile</p>
+                        <h1 className="text-5xl md:text-7xl font-extrabold mt-2">{user.username}</h1>
+                        <div className="mt-6 flex flex-col md:flex-row items-center gap-4">
+                            <div className="text-sm text-gray-300">
+                                <span className="font-bold text-white">{liked.size}</span> Liked Songs • 
+                                <span className="font-bold text-white ml-1">{user.playlists?.length || 0}</span> Playlists
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleEdit}
+                                    className="px-8 py-2 text-sm font-bold bg-white text-black rounded-full hover:scale-105 transition-transform"
+                                >
+                                    Edit profile
+                                </button>
+                                <button
+                                    onClick={logout}
+                                    className="px-8 py-2 text-sm font-bold border border-white/20 rounded-full hover:border-white transition-colors"
+                                >
+                                    Logout
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-[#181818] p-6 rounded-lg">
-                    <h2 className="text-xl font-bold mb-4">Account Overview</h2>
-                    <div className="space-y-4">
+            <div className="px-4 md:px-6 py-8 max-w-7xl mx-auto space-y-6">
+                <div className="bg-[#181818] p-6 rounded-lg hover:bg-[#282828] transition-colors">
+                    <h2 className="text-xl font-bold mb-6">Account Overview</h2>
+                    <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <p className="text-sm text-gray-400">Username</p>
-                            <p className="font-medium">{user.username}</p>
+                            <p className="text-sm text-gray-400 mb-1">Username</p>
+                            <p className="font-medium text-lg">{user.username}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-400">Member Since</p>
-                            <p className="font-medium">
+                            <p className="text-sm text-gray-400 mb-1">Member Since</p>
+                            <p className="font-medium text-lg">
                                 {new Date().toLocaleDateString()}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-[#181818] p-6 rounded-lg">
-                    <h2 className="text-xl font-bold mb-4">Your Library Stats</h2>
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#181818] p-6 rounded-lg hover:bg-[#282828] transition-colors">
+                    <h2 className="text-xl font-bold mb-6">Your Library Stats</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         <div>
-                            <p className="text-sm text-gray-400">Liked Songs</p>
-                            <p className="text-3xl font-bold">{liked.size}</p>
+                            <p className="text-3xl md:text-4xl font-bold">{liked.size}</p>
+                            <p className="text-sm text-gray-400 mt-1">Liked Songs</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-400">Playlists</p>
-                            <p className="text-3xl font-bold">{user.playlists?.length || 0}</p>
+                            <p className="text-3xl md:text-4xl font-bold">{user.playlists?.length || 0}</p>
+                            <p className="text-sm text-gray-400 mt-1">Playlists</p>
                         </div>
                     </div>
                 </div>
