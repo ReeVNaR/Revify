@@ -9,6 +9,15 @@ module.exports = {
       screens: {
         'xs': '475px',
       },
+      animation: {
+        'textShift': 'textShift 12s infinite linear',
+      },
+      keyframes: {
+        textShift: {
+          '0%, 20%': { transform: 'translateX(0%)' },
+          '80%, 100%': { transform: 'translateX(-100%)' },
+        },
+      },
     },
   },
   plugins: [],

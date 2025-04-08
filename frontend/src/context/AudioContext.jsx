@@ -164,9 +164,13 @@ const AudioProvider = ({ children }) => {
         try {
             if (currentTrack?._id !== track._id) {
                 audio.pause();
+                audio.currentTime = 0; // Reset time before anything else
                 setCurrentTrack(track);
                 audio.src = track.audioUrl;
                 audio.volume = volume;
+            } else {
+                // Also reset time when replaying the same track
+                audio.currentTime = 0;
             }
             
             setIsPlaying(true);
@@ -655,16 +659,29 @@ const AudioProvider = ({ children }) => {
             setHasInteracted(true);
         };
 
+        const handleKeyPress = (e) => {
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                if (isPlaying) {
+                    pause();
+                } else if (currentTrack) {
+                    play(currentTrack);
+                }
+            }
+        };
+
         document.addEventListener('click', handleInteraction);
         document.addEventListener('touchstart', handleInteraction);
         document.addEventListener('keydown', handleInteraction);
+        document.addEventListener('keydown', handleKeyPress);
 
         return () => {
             document.removeEventListener('click', handleInteraction);
             document.removeEventListener('touchstart', handleInteraction);
             document.removeEventListener('keydown', handleInteraction);
+            document.removeEventListener('keydown', handleKeyPress);
         };
-    }, []);
+    }, [isPlaying, currentTrack, play, pause]);
 
     // Expose loading and error states
     return (

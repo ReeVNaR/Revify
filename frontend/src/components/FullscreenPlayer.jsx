@@ -3,31 +3,33 @@ import { useAudio } from '../context/AudioContext';
 import { useAudioNavigation } from '../hooks/useAudioNavigation';
 
 const FullscreenPlayer = ({ onClose }) => {
-    const { currentTrack, isPlaying, play, pause, audioRef, toggleRepeat, toggleShuffle, repeat, shuffle, liked, toggleLike, currentTime, duration } = useAudio();
+    const { currentTrack, isPlaying, play, pause, audioRef, toggleRepeat, toggleShuffle, repeat, shuffle, liked, toggleLike } = useAudio();
     const { playNext, playPrevious } = useAudioNavigation();
     const [progress, setProgress] = useState(0);
     const [touchStart, setTouchStart] = useState(null);
     const [touchMove, setTouchMove] = useState(null);
     const [isClosing, setIsClosing] = useState(false);
     const [swipeOffset, setSwipeOffset] = useState(0);
-
-    useEffect(() => {
-        if (duration) {
-            setProgress((currentTime / duration) * 100);
-        }
-    }, [currentTime, duration]);
+    const [isSliding, setIsSliding] = useState(false);
+    const [currentTimeState, setCurrentTimeState] = useState(0);
+    const [durationState, setDurationState] = useState(0);
 
     useEffect(() => {
         const audio = audioRef.current;
         const updateTime = () => {
-            setProgress((audio.currentTime / duration) * 100);
+            setCurrentTimeState(audio.currentTime);
+            setDurationState(audio.duration);
+            setProgress((audio.currentTime / audio.duration) * 100 || 0);
         };
 
         audio.addEventListener('timeupdate', updateTime);
+        audio.addEventListener('loadedmetadata', updateTime);
+
         return () => {
             audio.removeEventListener('timeupdate', updateTime);
+            audio.removeEventListener('loadedmetadata', updateTime);
         };
-    }, [duration]);
+    }, []);
 
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
@@ -35,26 +37,22 @@ const FullscreenPlayer = ({ onClose }) => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const handleProgressClick = (e) => {
-        const bounds = e.currentTarget.getBoundingClientRect();
-        const percent = (e.clientX - bounds.left) / bounds.width;
-        audioRef.current.currentTime = percent * duration;
-    };
-
     const handleProgressChange = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX || (e.touches?.[0]?.clientX);
-        if (!x) return;
-        
-        const percent = (x - rect.left) / rect.width;
-        const newTime = Math.min(Math.max(percent * duration, 0), duration);
+        const value = parseFloat(e.target.value);
+        const newTime = (value / 100) * durationState;
         audioRef.current.currentTime = newTime;
-        setProgress((newTime / duration) * 100);
+        setProgress(value);
+        setCurrentTimeState(newTime);
     };
 
-    const handleProgressDrag = (e) => {
-        e.preventDefault();
-        handleProgressChange(e);
+    const handleSlideStart = () => {
+        setIsSliding(true);
+        audioRef.current.muted = true;
+    };
+
+    const handleSlideEnd = () => {
+        setIsSliding(false);
+        audioRef.current.muted = false;
     };
 
     const handleTouchMove = (e) => {
@@ -131,15 +129,6 @@ const FullscreenPlayer = ({ onClose }) => {
             </div>
 
             <div className="relative h-full max-w-7xl mx-auto px-4 py-8">
-                <button 
-                    onClick={onClose}
-                    className="absolute top-8 right-8 p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
-                </button>
-
                 <div className="h-full flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
                     {/* Album Art with Shadow */}
                     <div className="w-full max-w-[400px] md:w-1/2 aspect-square relative">
@@ -160,29 +149,24 @@ const FullscreenPlayer = ({ onClose }) => {
 
                         {/* Progress Bar */}
                         <div className="w-full space-y-1">
-                            <div 
-                                className="w-full h-2 bg-white/10 rounded-full cursor-pointer relative group"
-                                onClick={handleProgressChange}
-                                onTouchMove={handleTouchMove}
-                                onTouchStart={handleProgressChange}
-                                onMouseDown={(e) => {
-                                    window.addEventListener('mousemove', handleProgressDrag);
-                                    window.addEventListener('mouseup', () => {
-                                        window.removeEventListener('mousemove', handleProgressDrag);
-                                    }, { once: true });
-                                    handleProgressChange(e);
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={progress}
+                                onChange={handleProgressChange}
+                                onMouseDown={handleSlideStart}
+                                onMouseUp={handleSlideEnd}
+                                onTouchStart={handleSlideStart}
+                                onTouchEnd={handleSlideEnd}
+                                className="w-full h-2 rounded-full cursor-pointer appearance-none bg-white/10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white hover:[&::-webkit-slider-thumb]:bg-green-500 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-white/10 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white hover:[&::-moz-range-thumb]:bg-green-500 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-white/10"
+                                style={{
+                                    background: `linear-gradient(to right, white ${progress}%, rgba(255,255,255,0.1) ${progress}%)`
                                 }}
-                            >
-                                <div 
-                                    className="absolute h-full bg-white group-hover:bg-green-500 rounded-full transition-colors"
-                                    style={{ width: `${progress}%` }}
-                                >
-                                    <div className="opacity-0 group-hover:opacity-100 absolute -right-[5px] top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-opacity" />
-                                </div>
-                            </div>
+                            />
                             <div className="flex justify-between text-xs font-medium text-white/60 px-1">
-                                <span className="tabular-nums select-none">{formatTime(currentTime)}</span>
-                                <span className="tabular-nums select-none">{formatTime(duration)}</span>
+                                <span className="tabular-nums select-none">{formatTime(currentTimeState)}</span>
+                                <span className="tabular-nums select-none">{formatTime(durationState)}</span>
                             </div>
                         </div>
 
@@ -249,6 +233,16 @@ const FullscreenPlayer = ({ onClose }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* New position for close button */}
+                <button 
+                    onClick={onClose}
+                    className="absolute bottom-8 right-8 p-3 hover:bg-white/10 rounded-full transition-colors bg-black/20 backdrop-blur-sm"
+                >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
             </div>
         </div>
     );

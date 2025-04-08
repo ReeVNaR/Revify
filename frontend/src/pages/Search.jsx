@@ -17,6 +17,7 @@ const Search = () => {
     } = useAudio();
 
     const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const recentlyAddedSongs = useMemo(() => {
         return [...songs]
@@ -25,8 +26,8 @@ const Search = () => {
                 const dateB = new Date(b.createdAt);
                 return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
             })
-            .slice(0, 4);  // Only take 4 songs
-    }, [songs, sortOrder]);
+            .slice(0, isExpanded ? 14 : 4);  // Show 14 songs when expanded, 4 when collapsed
+    }, [songs, sortOrder, isExpanded]);
 
     const handlePlayPause = (song, e) => {
         e.preventDefault();
@@ -94,16 +95,13 @@ const Search = () => {
                         <div className="flex justify-between items-center mb-2">
                             <h2 className="text-lg font-bold">Recently Added</h2>
                             <button
-                                onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                                onClick={() => setIsExpanded(prev => !prev)}
                                 className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
                             >
-                                Sort
-                                <svg className={`w-3 h-3 transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M7 10l5 5 5-5z"/>
-                                </svg>
+                                {isExpanded ? 'Show Less' : 'Show All'}
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                        <div className={`grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 ${isExpanded ? 'grid-rows-4' : 'grid-rows-1'}`}>
                             {recentlyAddedSongs.map(song => (
                                 <div 
                                     key={song._id}

@@ -31,6 +31,8 @@ const MiniPlayer = () => {
     });
     const [touchStart, setTouchStart] = useState(null);
     const [swipeDirection, setSwipeDirection] = useState(null);
+    const [isSliding, setIsSliding] = useState(false);
+    const [previousVolume, setPreviousVolume] = useState(null);
     const navigate = useNavigate();
 
     const updateProgress = useCallback(() => {
@@ -122,6 +124,20 @@ const MiniPlayer = () => {
             setProgress(percent * 100);
         }
     }, [duration, audioRef]);
+
+    const handleProgressMouseDown = () => {
+        setPreviousVolume(audioRef.current.volume);
+        audioRef.current.volume = 0;
+        setIsSliding(true);
+    };
+
+    const handleProgressMouseUp = () => {
+        if (previousVolume !== null) {
+            audioRef.current.volume = previousVolume;
+            setPreviousVolume(null);
+        }
+        setIsSliding(false);
+    };
 
     // Modify handleProgressChange to handle range input changes
     const handleProgressChange = useCallback((e) => {
@@ -416,6 +432,10 @@ const MiniPlayer = () => {
                                         step="0.1"
                                         value={progress}
                                         onChange={handleProgressChange}
+                                        onMouseDown={handleProgressMouseDown}
+                                        onMouseUp={handleProgressMouseUp}
+                                        onTouchStart={handleProgressMouseDown}
+                                        onTouchEnd={handleProgressMouseUp}
                                         className="w-full h-1 rounded-full appearance-none cursor-pointer bg-[#4d4d4d]"
                                         style={{
                                             backgroundImage: `linear-gradient(to right, white ${progress}%, #4d4d4d ${progress}%)`
