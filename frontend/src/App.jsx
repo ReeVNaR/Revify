@@ -29,7 +29,7 @@ const App = () => {
   // Preload critical routes
   useEffect(() => {
     const preloadRoutes = () => {
-      const routes = ['./pages/Home', './pages/Search'];
+      const routes = ['./pages/Home', './pages/Search', './pages/Library'];
       routes.forEach(route => {
         const link = document.createElement('link');
         link.rel = 'prefetch';
