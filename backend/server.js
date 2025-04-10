@@ -25,19 +25,22 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        // Allow localhost and any subdomain/path of revifym.vercel.app
-        if (
-            origin === 'http://localhost:5173' ||
-            origin.endsWith('revifym.vercel.app')
-        ) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://revifym.vercel.app'
+        ];
+        
+        if (allowedOrigins.includes(origin) || origin.endsWith('vercel.app')) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    maxAge: 86400 // 24 hours
 }));
 
 app.use(express.json({ limit: '100mb' }));
@@ -647,6 +650,15 @@ app.delete('/api/users/:username/likes/:songId', async (req, res) => {
         res.json(user);
     } catch (err) {
         res.status(400).json({ message: err.message });
+    }
+});
+
+// Add this before the error handling middleware
+app.use((req, res, next) => {
+    if (!req.path.startsWith('/api/')) {
+        res.redirect('https://revifym.vercel.app');
+    } else {
+        next();
     }
 });
 
