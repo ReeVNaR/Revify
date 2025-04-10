@@ -3,15 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/R.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Revify - Music Streaming</title>
-    <meta name="description" content="Stream your favorite music with Revify" />
+    <meta name="description" content="Stream your favorite music with Revify - A modern music streaming platform" />
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     
+    <!-- Security -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Revify - Music Streaming">
+    <meta property="og:description" content="Stream your favorite music with Revify">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://revifym.vercel.app">
+    
+    <!-- Resource hints -->
     <link rel="dns-prefetch" href="https://revify.onrender.com">
-    <link rel="preconnect" href="https://revify.onrender.com">
+    <link rel="preconnect" href="https://revify.onrender.com" crossorigin>
+    <link rel="dns-prefetch" href="https://revifym.vercel.app">
+    <link rel="preconnect" href="https://revifym.vercel.app">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-title" content="Revify">
   </head>
   <body>
     <div id="root"></div>
