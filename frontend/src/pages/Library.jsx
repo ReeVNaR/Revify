@@ -75,8 +75,17 @@ const Library = () => {
             {/* Playlists Grid */}
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-6 gap-3 md:gap-4 gap-y-6 md:gap-y-8 mb-8">
                 {playlists?.map(playlist => {
-                    const songList = playlist.songs?.filter(song => song && song.coverUrl) || [];
-                    const coverImage = songList[0]?.coverUrl;
+                    // Debug the playlist data
+                    console.log('Raw playlist:', playlist);
+                    
+                    // Ensure songs is properly populated and contains valid objects
+                    const songList = Array.isArray(playlist.songs) 
+                        ? playlist.songs.filter(song => song && song._id && song.coverUrl)
+                        : [];
+                        
+                    console.log('Filtered songList:', songList);
+                    
+                    const coverUrl = songList[0]?.coverUrl;
                     
                     return (
                         <div
@@ -86,9 +95,9 @@ const Library = () => {
                         >
                             <div className="relative mb-3 sm:mb-4">
                                 <div className="aspect-square bg-[#282828] rounded-md shadow-lg overflow-hidden">
-                                    {coverImage ? (
+                                    {coverUrl ? (
                                         <img 
-                                            src={coverImage}
+                                            src={coverUrl}
                                             alt={playlist.name}
                                             className="w-full h-full object-cover"
                                             loading="lazy"

@@ -260,10 +260,25 @@ export const removeSongFromPlaylist = async (username, playlistId, songId) => {
 
 export const getPlaylists = async (username) => {
     try {
+        console.log('Fetching playlists for user:', username);
         const response = await api.get(`/api/users/${username}/playlists`);
-        return response.data;
-    } catch (error) {
-        console.error('Get playlists error:', error);
+        
+        console.log('Raw playlists response:', JSON.stringify(response.data, null, 2));
+        
+        if (!response.data) {
+            throw new Error('No data received from server');
+        }
+
+        // Verify songs are populated
+        const playlists = response.data.map(playlist => ({
+            ...playlist,
+            songs: playlist.songs.filter(song => song && song.coverUrl)
+        }));
+        
+        console.log('Processed playlists:', JSON.stringify(playlists, null, 2));
+        return playlists;
+    } catch (err) {
+        console.error('Get playlists error:', err);
         throw new Error('Failed to fetch playlists');
     }
 };

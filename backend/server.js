@@ -528,12 +528,27 @@ app.put('/api/users/:username/playlists/:playlistId', async (req, res) => {
 
 app.get('/api/users/:username/playlists', async (req, res) => {
     try {
+        // Explicitly populate all song fields we need
         const user = await User.findOne({ username: req.params.username })
-            .populate('playlists.songs');
+            .populate({
+                path: 'playlists.songs',
+                model: 'Song',
+                select: 'title artist coverUrl audioUrl _id'
+            });
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // Log the populated data
+        console.log('Playlist songs populated:', 
+            user.playlists.map(p => ({
+                id: p._id,
+                name: p.name,
+                songCount: p.songs.length,
+                firstSong: p.songs[0]
+            }))
+        );
 
         res.json(user.playlists);
     } catch (err) {
