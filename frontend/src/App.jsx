@@ -28,16 +28,14 @@ const App = () => {
 
   // Preload critical routes
   useEffect(() => {
-    const preloadRoutes = () => {
-      const routes = ['./pages/Home', './pages/Search', './pages/Library'];
-      routes.forEach(route => {
-        const link = document.createElement('link');
-        link.rel = 'prefetch';
-        link.href = route;
-        document.head.appendChild(link);
-      });
-    };
-    preloadRoutes();
+    const routes = [Home, Search, Library];
+    routes.forEach(component => {
+      try {
+        component.preload?.();
+      } catch (error) {
+        console.error('Error preloading component:', error);
+      }
+    });
   }, []);
 
   return (
