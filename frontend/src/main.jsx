@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { AudioProvider } from './context/AudioContext'
 import App from './App'
 import './index.css'
@@ -9,10 +9,10 @@ window.Buffer = Buffer;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <MemoryRouter>
       <AudioProvider>
         <App />
       </AudioProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   </React.StrictMode>
 )

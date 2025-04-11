@@ -1,5 +1,7 @@
 import React, { useState, Suspense, lazy, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import routes, { criticalRoutes } from './routes/config';
+import NotFound from './components/NotFound';
 import LoadingSpinner from './components/LoadingSpinner';
 import BottomNav from './components/BottomNav';
 import { useAudio } from './context/AudioContext';
@@ -7,15 +9,6 @@ import MiniPlayer from './components/MiniPlayer';
 import Header from './components/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
-
-// Lazy load components with prefetch
-const Home = lazy(() => import(/* webpackPrefetch: true */ './pages/Home'));
-const Search = lazy(() => import(/* webpackPrefetch: true */ './pages/Search'));
-const SongsList = lazy(() => import(/* webpackPrefetch: true */ './pages/SongsList'));
-const SongView = lazy(() => import('./pages/SongView'));
-const Library = lazy(() => import('./pages/Library'));
-const Profile = lazy(() => import('./pages/Profile'));
-const PlaylistView = lazy(() => import('./pages/PlaylistView'));
 
 const App = () => {
   const { currentTrack } = useAudio();
@@ -28,10 +21,10 @@ const App = () => {
 
   // Preload critical routes
   useEffect(() => {
-    const routes = [Home, Search, Library];
-    routes.forEach(component => {
+    criticalRoutes.forEach(route => {
+      const component = routes.find(r => r.path === route)?.component;
       try {
-        component.preload?.();
+        component?.preload?.();
       } catch (error) {
         console.error('Error preloading component:', error);
       }
@@ -50,18 +43,10 @@ const App = () => {
               ) : (
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/songs" element={<SongsList />} />
-                    <Route path="/songs/:songId" element={<SongView />} />
-                    <Route path="/library" element={<Library />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/playlist/:playlistId" element={<PlaylistView />} />
-                    <Route path="*" element={
-                      <div className="text-white text-center p-8">
-                        <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
-                      </div>
-                    } />
+                    {routes.map(({ path, component: Component }) => (
+                      <Route key={path} path={path} element={<Component />} />
+                    ))}
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               )}
