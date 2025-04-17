@@ -6,6 +6,7 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const bcrypt = require('bcryptjs');
+const axios = require('axios');
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -58,6 +59,27 @@ app.use((req, res, next) => {
     console.log(`${req.method} ${req.path}`, req.body);
     next();
 });
+
+// Add auto-fetch functionality
+const setupAutoFetch = () => {
+    const TARGET_URL = 'https://revifym.vercel.app';
+    const FETCH_INTERVAL = 30000; // 30 seconds
+
+    const fetchUrl = async () => {
+        try {
+            await axios.get(TARGET_URL);
+            console.log('URL fetched successfully at:', new Date().toLocaleTimeString());
+        } catch (error) {
+            console.error('URL fetch failed:', error.message);
+        }
+    };
+
+    // Initial fetch
+    fetchUrl();
+    
+    // Set up interval
+    return setInterval(fetchUrl, FETCH_INTERVAL);
+};
 
 // Update Song Schema
 const songSchema = new mongoose.Schema({
@@ -685,4 +707,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    setupAutoFetch();
 });
