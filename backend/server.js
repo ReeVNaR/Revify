@@ -6,7 +6,6 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const bcrypt = require('bcryptjs');
-const axios = require('axios');
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -67,7 +66,8 @@ const setupAutoFetch = () => {
 
     const fetchUrl = async () => {
         try {
-            await axios.get(TARGET_URL);
+            const response = await fetch(TARGET_URL);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             console.log('URL fetched successfully at:', new Date().toLocaleTimeString());
         } catch (error) {
             console.error('URL fetch failed:', error.message);
