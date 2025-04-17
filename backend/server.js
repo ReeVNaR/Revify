@@ -62,7 +62,7 @@ app.use((req, res, next) => {
 // Add auto-fetch functionality
 const setupAutoFetch = () => {
     const TARGET_URL = 'https://revifym.vercel.app';
-    const FETCH_INTERVAL = 30000; // 30 seconds
+    const FETCH_INTERVAL = 60000; // 1 minute
 
     const fetchUrl = async () => {
         try {
