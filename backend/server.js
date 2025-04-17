@@ -171,6 +171,11 @@ app.get('/', (req, res) => {
     res.send('Revify API is running');
 });
 
+// Add ping endpoint for keeping server alive
+app.get('/api/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
 // Update Song routes with better error handling
 app.get('/api/songs', async (req, res) => {
     try {

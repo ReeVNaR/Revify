@@ -9,6 +9,7 @@ import MiniPlayer from './components/MiniPlayer';
 import Header from './components/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
+import { setupAutoRefresh } from './utils/refreshUtils';
 
 const App = () => {
   const { currentTrack } = useAudio();
@@ -29,6 +30,11 @@ const App = () => {
         console.error('Error preloading component:', error);
       }
     });
+  }, []);
+
+  useEffect(() => {
+    const cleanup = setupAutoRefresh();
+    return () => cleanup();
   }, []);
 
   return (
