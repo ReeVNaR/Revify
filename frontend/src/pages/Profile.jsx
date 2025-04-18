@@ -13,7 +13,6 @@ const Profile = () => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [isEditing, setIsEditing] = useState(false); // Add this state
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,10 +38,6 @@ const Profile = () => {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleEdit = async () => {
-        setIsEditing(true);
     };
 
     if (!user) {
@@ -139,12 +134,6 @@ const Profile = () => {
                                 <span className="font-bold text-white ml-1">{user.playlists?.length || 0}</span> Playlists
                             </div>
                             <div className="flex gap-2">
-                                <button
-                                    onClick={handleEdit}
-                                    className="px-8 py-2 text-sm font-bold bg-white text-black rounded-full hover:scale-105 transition-transform"
-                                >
-                                    Edit profile
-                                </button>
                                 <button
                                     onClick={logout}
                                     className="px-8 py-2 text-sm font-bold border border-white/20 rounded-full hover:border-white transition-colors"
