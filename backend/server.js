@@ -62,7 +62,7 @@ app.use((req, res, next) => {
 // Add auto-fetch functionality
 const setupAutoFetch = () => {
     const TARGET_URL = 'https://revify.onrender.com';
-    const FETCH_INTERVAL = 60000; // 1 minute
+    const FETCH_INTERVAL = 30000; // 30 seconds
 
     const fetchUrl = async () => {
         try {
