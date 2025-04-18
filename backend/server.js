@@ -61,7 +61,7 @@ app.use((req, res, next) => {
 
 // Add auto-fetch functionality
 const setupAutoFetch = () => {
-    const TARGET_URL = 'https://revifym.vercel.app';
+    const TARGET_URL = 'https://revify.onrender.com';
     const FETCH_INTERVAL = 60000; // 1 minute
 
     const fetchUrl = async () => {
