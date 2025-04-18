@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const { liked, user, login, register, logout } = useAudio();
     const [isLogin, setIsLogin] = useState(true);
     const [formData, setFormData] = useState({
@@ -110,6 +112,17 @@ const Profile = () => {
 
     return (
         <div className="min-h-screen bg-[#121212] text-white">
+            <div className="p-4">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="p-2 hover:bg-[#282828] rounded-full transition-colors"
+                    aria-label="Go back"
+                >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                    </svg>
+                </button>
+            </div>
             <div className="bg-gradient-to-b from-[#404040] to-[#121212] px-4 md:px-6 pt-16 pb-8">
                 <div className="flex flex-col md:flex-row items-center md:items-end gap-6 max-w-7xl mx-auto">
                     <div className="w-44 h-44 md:w-52 md:h-52 rounded-full shadow-2xl bg-[#282828] flex items-center justify-center">

@@ -96,6 +96,15 @@ const PlaylistView = () => {
 
     return (
         <div className="p-4 md:p-6 text-white">
+            <button
+                onClick={() => navigate(-1)}
+                className="mb-4 p-2 hover:bg-[#282828] rounded-full transition-colors"
+                aria-label="Go back"
+            >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+            </button>
             {error && (
                 <div className="bg-red-500/10 text-red-500 p-4 rounded-lg mb-4">
                     {error}
